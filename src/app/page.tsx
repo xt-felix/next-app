@@ -1,65 +1,136 @@
-import Image from "next/image";
+import Link from 'next/link';
+import AnimatedButton from '@/components/AnimatedButton';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-b from-primary-600/10 to-transparent py-20 md:py-32">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+            组件化设计模式与样式管理
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
+            探索 Next.js 中的组件化开发、响应式设计、主题切换、动画效果和表单管理的最佳实践
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link href="/products">
+              <AnimatedButton variant="primary">浏览商品列表</AnimatedButton>
+            </Link>
+            <Link href="/contact">
+              <AnimatedButton variant="outline">联系我们</AnimatedButton>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            案例特性
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard
+              icon="🎨"
+              title="响应式设计"
+              description="移动优先的设计理念，支持所有主流设备和屏幕尺寸，从手机到桌面完美适配"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <FeatureCard
+              icon="🌓"
+              title="暗黑模式"
+              description="完整的暗黑模式支持，自动跟随系统偏好或手动切换，保护用户视力"
+            />
+            <FeatureCard
+              icon="✨"
+              title="动画效果"
+              description="基于 Framer Motion 的流畅动画，提升用户体验和交互感"
+            />
+            <FeatureCard
+              icon="📦"
+              title="组件化架构"
+              description="高度可复用的组件设计，符合单一职责原则，易于维护和扩展"
+            />
+            <FeatureCard
+              icon="🎯"
+              title="表单验证"
+              description="使用 react-hook-form 和 zod 实现强类型表单验证，提供实时错误反馈"
+            />
+            <FeatureCard
+              icon="♿"
+              title="无障碍访问"
+              description="遵循 WCAG 标准，支持键盘导航、屏幕阅读器和 ARIA 属性"
+            />
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Tech Stack Section */}
+      <section className="py-16 md:py-24 bg-gray-50 dark:bg-gray-900/50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            技术栈
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            <TechCard name="Next.js 16" />
+            <TechCard name="React 19" />
+            <TechCard name="TypeScript" />
+            <TechCard name="Tailwind CSS" />
+            <TechCard name="Framer Motion" />
+            <TechCard name="React Hook Form" />
+            <TechCard name="Zod" />
+            <TechCard name="CSS Modules" />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4 text-center">
+          <div className="card max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              开始探索
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+              查看完整的组件示例和源代码，学习如何构建现代化的 Web 应用
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/products">
+                <AnimatedButton variant="primary">查看商品列表</AnimatedButton>
+              </Link>
+              <Link href="/contact">
+                <AnimatedButton variant="secondary">测试表单</AnimatedButton>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function FeatureCard({
+  icon,
+  title,
+  description
+}: {
+  icon: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="card hover:shadow-lg transition-shadow">
+      <div className="text-4xl mb-4">{icon}</div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-400">{description}</p>
+    </div>
+  );
+}
+
+function TechCard({ name }: { name: string }) {
+  return (
+    <div className="card text-center hover:shadow-md transition-shadow">
+      <p className="font-semibold">{name}</p>
     </div>
   );
 }
