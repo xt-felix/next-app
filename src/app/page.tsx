@@ -124,18 +124,33 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="card hover:shadow-lg transition-shadow">
+    <div className="card hover:shadow-lg transition-shadow" style={{
+      background: 'var(--card-bg)',
+      border: '1px solid var(--border)'
+    }}>
       <div className="text-4xl mb-4">{icon}</div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-400">{description}</p>
+      <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+        {title}
+      </h3>
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }
 
 function TechCard({ name }: { name: string }) {
   return (
-    <div className="card text-center hover:shadow-md transition-shadow">
-      <p className="font-semibold">{name}</p>
+    <div
+      className="card text-center hover:shadow-md transition-shadow py-4"
+      style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--border)'
+      }}
+    >
+      <p className="font-semibold" style={{ color: 'var(--foreground)' }}>
+        {name}
+      </p>
     </div>
   );
 }
