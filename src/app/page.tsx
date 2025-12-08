@@ -5,9 +5,14 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-primary-600/10 to-transparent py-20 md:py-32">
+      <section className="relative py-20 md:py-32" style={{ background: 'linear-gradient(to bottom, rgba(16, 185, 129, 0.1), transparent)' }}>
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6" style={{
+            background: 'linear-gradient(to right, #10b981, #6366f1)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             组件化设计模式与样式管理
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">

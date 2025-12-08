@@ -51,11 +51,14 @@ export default function ProductCard({
         )}
 
         <div className="mt-3 flex items-center justify-between">
-          <p className="text-xl font-semibold" style={{ color: 'var(--primary)' }}>
+          <p className="text-xl font-semibold" style={{ color: '#10b981' }}>
             ¥{price.toLocaleString()}
           </p>
           <button
-            className="px-4 py-1.5 text-sm rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            className="px-4 py-1.5 text-sm rounded-lg text-white transition-colors"
+            style={{ backgroundColor: '#10b981' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
             onClick={(e) => {
               e.stopPropagation();
               onClick?.();
