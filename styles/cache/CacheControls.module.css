@@ -1,0 +1,138 @@
+/* 控制区域容器 */
+.controls {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 32px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 按钮组 */
+.buttonsGroup {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* 刷新缓存按钮 */
+.revalidateBtn {
+  flex: 1;
+  min-width: 160px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.revalidateBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.revalidateBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 强制刷新按钮 */
+.refreshBtn {
+  flex: 1;
+  min-width: 160px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3);
+}
+
+.refreshBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+}
+
+/* 消息提示 */
+.message {
+  background: #f0f9ff;
+  border-left: 4px solid #3b82f6;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e3a8a;
+  margin-bottom: 16px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 提示区域 */
+.hint {
+  background: #fef3c7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.hint h4 {
+  color: #92400e;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.hint ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.hint li {
+  color: #78350f;
+  font-size: 13px;
+  padding: 6px 0;
+  line-height: 1.6;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .controls {
+    padding: 16px;
+  }
+
+  .buttonsGroup {
+    flex-direction: column;
+  }
+
+  .revalidateBtn,
+  .refreshBtn {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .hint h4 {
+    font-size: 13px;
+  }
+
+  .hint li {
+    font-size: 12px;
+  }
+}

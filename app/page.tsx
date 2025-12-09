@@ -42,6 +42,24 @@ export default function HomePage() {
             </div>
           </Link>
 
+          {/* 数据缓存策略 */}
+          <Link href="/cache-dashboard" className="card hover:scale-105 transition-transform">
+            <div className="card-body">
+              <div className="text-4xl mb-4">💾</div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                第十一章：缓存策略
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Data Cache、Revalidate、Tags
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="badge badge-accent">缓存</span>
+                <span className="badge badge-accent">刷新</span>
+                <span className="badge badge-accent">性能优化</span>
+              </div>
+            </div>
+          </Link>
+
           {/* 商城页面 */}
           <Link href="/shop" className="card hover:scale-105 transition-transform">
             <div className="card-body">
