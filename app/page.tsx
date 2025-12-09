@@ -60,6 +60,24 @@ export default function HomePage() {
             </div>
           </Link>
 
+          {/* 图片分享应用 */}
+          <Link href="/image-share" className="card hover:scale-105 transition-transform">
+            <div className="card-body">
+              <div className="text-4xl mb-4">🖼️</div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                第十二章：API Routes
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                文件上传、JWT认证、RESTful API
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="badge badge-secondary">API Routes</span>
+                <span className="badge badge-secondary">文件上传</span>
+                <span className="badge badge-secondary">JWT</span>
+              </div>
+            </div>
+          </Link>
+
           {/* 商城页面 */}
           <Link href="/shop" className="card hover:scale-105 transition-transform">
             <div className="card-body">

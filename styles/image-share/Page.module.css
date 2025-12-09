@@ -1,0 +1,242 @@
+/* 主页面样式 */
+
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 32px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: white;
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.icon {
+  font-size: 40px;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.backLink {
+  color: white;
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.backLink:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-size: 14px;
+}
+
+.logoutBtn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.main {
+  padding: 40px 20px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.loginSection {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.contentSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.uploadSection,
+.listSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.knowledgeBox {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.knowledgeBox h3 {
+  color: #1e293b;
+  font-size: 16px;
+  margin: 0 0 12px 0;
+}
+
+.knowledgeBox ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.knowledgeBox li {
+  color: #475569;
+  font-size: 13px;
+  padding: 6px 0;
+  line-height: 1.6;
+}
+
+.footer {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 40px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 60px;
+}
+
+.footerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footerContent h3 {
+  color: white;
+  font-size: 24px;
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.apiList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.apiCard {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s;
+}
+
+.apiCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.apiCard h4 {
+  color: #1e293b;
+  font-size: 16px;
+  margin: 0 0 8px 0;
+  font-family: 'Courier New', monospace;
+}
+
+.apiCard p {
+  color: #475569;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.apiCard code {
+  display: block;
+  background: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #0f172a;
+  font-family: 'Courier New', monospace;
+}
+
+/* 移动端适配 */
+@media (max-width: 968px) {
+  .contentSection {
+    grid-template-columns: 1fr;
+  }
+
+  .apiList {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 20px 12px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .icon {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .main {
+    padding: 20px 12px;
+  }
+
+  .footer {
+    padding: 24px 12px;
+  }
+
+  .footerContent h3 {
+    font-size: 20px;
+  }
+}
