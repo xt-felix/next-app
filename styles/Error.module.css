@@ -1,0 +1,171 @@
+/* 错误页面样式 */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  padding: 20px;
+}
+
+.errorBox {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  padding: 60px 40px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  animation: bounceIn 0.6s ease-out;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.errorCode {
+  font-size: 80px;
+  font-weight: 900;
+  color: #f5576c;
+  margin: 0;
+  line-height: 1;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.errorTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 16px 0;
+}
+
+.errorMessage {
+  font-size: 16px;
+  color: #718096;
+  margin: 12px 0;
+  line-height: 1.6;
+}
+
+.errorHint {
+  font-size: 15px;
+  color: #4a5568;
+  margin: 24px 0 8px;
+  font-weight: 600;
+}
+
+.errorList {
+  text-align: left;
+  display: inline-block;
+  margin: 8px 0 32px;
+  padding-left: 24px;
+  color: #718096;
+  font-size: 14px;
+  line-height: 2;
+}
+
+.errorList li {
+  margin: 4px 0;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.button {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  text-decoration: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-block;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(245, 87, 108, 0.4);
+}
+
+.buttonSecondary {
+  padding: 12px 32px;
+  background: white;
+  color: #f5576c;
+  text-decoration: none;
+  border: 2px solid #f5576c;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-block;
+}
+
+.buttonSecondary:hover {
+  background: #f5576c;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(245, 87, 108, 0.3);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .errorBox {
+    padding: 40px 24px;
+  }
+
+  .errorCode {
+    font-size: 60px;
+  }
+
+  .errorTitle {
+    font-size: 24px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .button,
+  .buttonSecondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .errorBox {
+    padding: 32px 20px;
+  }
+
+  .errorCode {
+    font-size: 48px;
+  }
+
+  .errorTitle {
+    font-size: 20px;
+  }
+
+  .errorMessage {
+    font-size: 14px;
+  }
+}

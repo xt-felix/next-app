@@ -1,0 +1,408 @@
+/* 新闻列表页面样式 */
+
+.container {
+  min-height: 100vh;
+  background: #f7fafc;
+}
+
+/* 顶部导航栏 */
+.header {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+}
+
+.nav a {
+  color: #4a5568;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.nav a:hover {
+  color: #667eea;
+}
+
+.nav a.active {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userName {
+  color: #2d3748;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.userRole {
+  color: #718096;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.logoutBtn {
+  padding: 6px 16px;
+  background: #fff;
+  color: #e53e3e;
+  border: 1px solid #fc8181;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.logoutBtn:hover {
+  background: #fff5f5;
+  border-color: #e53e3e;
+}
+
+/* 主内容区 */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* SSR 信息提示 */
+.ssrInfo {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-around;
+  gap: 24px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.infoLabel {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.infoValue {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* 新闻列表 */
+.newsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 48px;
+}
+
+.newsCard {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.newsCard:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.newsContent {
+  padding: 24px;
+}
+
+.newsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.newsTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.newsCategory {
+  background: #667eea;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.newsSummary {
+  color: #718096;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.newsFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.newsMeta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #718096;
+}
+
+.newsAuthor,
+.newsDate,
+.newsViews {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.readMore {
+  padding: 8px 20px;
+  background: #f7fafc;
+  color: #667eea;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.readMore:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+/* SSR 优势说明 */
+.advantagesSection {
+  margin-bottom: 48px;
+}
+
+.advantagesTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.advantagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.advantageCard {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+}
+
+.advantageCard:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+.advantageCard h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 8px;
+}
+
+.advantageCard p {
+  font-size: 14px;
+  color: #718096;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 技术实现说明 */
+.techSection {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 48px;
+}
+
+.techTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.codeExample h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 12px;
+}
+
+.code {
+  background: #1a202c;
+  color: #e2e8f0;
+  padding: 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+/* 页脚 */
+.footer {
+  background: white;
+  padding: 24px;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+  color: #718096;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.footer p {
+  margin: 4px 0;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .headerContent {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .ssrInfo {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .infoItem {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .newsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .newsFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .advantagesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .techSection {
+    padding: 20px;
+  }
+
+  .code {
+    font-size: 12px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 20px 16px;
+  }
+
+  .newsCard {
+    margin: 0 -8px;
+    border-radius: 8px;
+  }
+
+  .newsContent {
+    padding: 16px;
+  }
+
+  .newsTitle {
+    font-size: 18px;
+  }
+
+  .newsSummary {
+    font-size: 14px;
+  }
+
+  .newsMeta {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

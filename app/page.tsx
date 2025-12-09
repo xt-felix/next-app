@@ -15,15 +15,33 @@ export default function HomePage() {
             Next.js 全栈开发案例
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-2">
-            API Routes 与全栈开发完整教程
+            从零开始的 Next.js 学习之旅
           </p>
           <p className="text-gray-500 dark:text-gray-400">
-            从零开始学习 Next.js 后端开发
+            SSR、API Routes、全栈开发完整教程
           </p>
         </div>
 
         {/* 功能卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
+          {/* SSR 新闻列表 */}
+          <Link href="/ssr-login" className="card hover:scale-105 transition-transform">
+            <div className="card-body">
+              <div className="text-4xl mb-4">📰</div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                第七章：SSR
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                服务端渲染、权限控制、中间件
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="badge badge-info">SSR</span>
+                <span className="badge badge-info">中间件</span>
+                <span className="badge badge-info">权限控制</span>
+              </div>
+            </div>
+          </Link>
+
           {/* 商城页面 */}
           <Link href="/shop" className="card hover:scale-105 transition-transform">
             <div className="card-body">
@@ -86,6 +104,8 @@ export default function HomePage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
+              { icon: '🚀', title: 'SSR 渲染', desc: 'getServerSideProps 服务端渲染' },
+              { icon: '🔐', title: 'SSR 鉴权', desc: '服务端身份验证与权限控制' },
               { icon: '🔌', title: 'API Routes', desc: 'Next.js 后端接口开发' },
               { icon: '🔒', title: 'JWT 认证', desc: '用户登录与权限控制' },
               { icon: '✅', title: 'Zod 校验', desc: '类型安全的数据验证' },
@@ -118,8 +138,25 @@ export default function HomePage() {
               💡 测试账号
             </h3>
             <div className="space-y-2 text-sm">
+              <div className="mb-4 pb-4 border-b border-blue-200 dark:border-blue-800">
+                <p className="text-blue-900 dark:text-blue-300 font-medium mb-2">SSR 登录测试：</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center">
+                    <div className="text-blue-900 dark:text-blue-300 font-medium mb-1">Admin</div>
+                    <div className="text-xs text-blue-700 dark:text-blue-400">全部权限</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-blue-900 dark:text-blue-300 font-medium mb-1">User</div>
+                    <div className="text-xs text-blue-700 dark:text-blue-400">部分权限</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-blue-900 dark:text-blue-300 font-medium mb-1">Guest</div>
+                    <div className="text-xs text-blue-700 dark:text-blue-400">有限权限</div>
+                  </div>
+                </div>
+              </div>
               <div className="flex justify-between items-center py-2 border-b border-blue-200 dark:border-blue-800">
-                <span className="text-blue-900 dark:text-blue-300 font-medium">管理员账号：</span>
+                <span className="text-blue-900 dark:text-blue-300 font-medium">商城管理员：</span>
                 <div className="flex gap-2">
                   <code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded">admin</code>
                   <code className="bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded">admin123</code>
