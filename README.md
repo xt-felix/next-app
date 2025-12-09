@@ -1,22 +1,22 @@
-# Next.js 数据缓存策略完整教程
+# Next.js API Routes 完整教程
 
-> 🎯 **学习目标**：掌握 Next.js App Router 的缓存机制和性能优化策略
+> 🎯 **学习目标**：掌握 Next.js API Routes 开发后端接口的完整流程
 >
 > 📚 **教程特点**：先讲解知识点，再给出代码实现
 >
-> ⏱️ **学习时间**：建议 2-3 天，每天 2 小时
+> ⏱️ **学习时间**：建议 2-3 天，每天 2-3 小时
 
 ---
 
 ## 📖 目录
 
 - [快速开始](#快速开始)
-- [知识点一：Next.js 缓存体系](#知识点一nextjs-缓存体系)
-- [知识点二：Data Cache 数据缓存](#知识点二data-cache-数据缓存)
-- [知识点三：缓存失效策略](#知识点三缓存失效策略)
-- [知识点四：手动刷新缓存](#知识点四手动刷新缓存)
-- [知识点五：Server Components 缓存](#知识点五server-components-缓存)
-- [知识点六：缓存安全与最佳实践](#知识点六缓存安全与最佳实践)
+- [知识点一：API Routes 基础](#知识点一api-routes-基础)
+- [知识点二：处理不同 HTTP 方法](#知识点二处理不同-http-方法)
+- [知识点三：请求体解析](#知识点三请求体解析)
+- [知识点四：文件上传处理](#知识点四文件上传处理)
+- [知识点五：身份验证与授权](#知识点五身份验证与授权)
+- [知识点六：错误处理与响应规范](#知识点六错误处理与响应规范)
 - [完整项目实战](#完整项目实战)
 - [常见问题](#常见问题)
 
@@ -27,7 +27,7 @@
 ### 启动项目
 
 ```bash
-# 安装依赖
+# 确保已安装依赖
 npm install
 
 # 启动开发服务器
@@ -37,1125 +37,1179 @@ npm run dev
 ### 访问页面
 
 1. 打开浏览器访问：http://localhost:3000
-2. 点击"第十一章：缓存策略"卡片
-3. 观察数据时间戳，验证缓存效果
-4. 点击"手动刷新缓存"按钮测试缓存清除
+2. 点击"图片分享应用"卡片
+3. 使用测试账号登录：
+   - 管理员：`admin` / `admin123`
+   - 普通用户：`user` / `user123`
+4. 上传图片，查看列表
 
 ---
 
-## 知识点一：Next.js 缓存体系
+## 知识点一：API Routes 基础
 
 ### 📚 概念讲解
 
-Next.js 13+ App Router 引入了全新的缓存体系，主要包括：
+#### 🔍 什么是 API Routes？
 
-#### 🔍 四种缓存类型
+**API Routes** 是 Next.js 提供的后端 API 开发功能，让你可以在同一个项目中同时开发前端和后端。
+
+```
+传统开发模式：
+前端项目（React） + 后端项目（Express/Nest.js）
+├─ 需要两个项目
+├─ 需要配置 CORS
+└─ 部署复杂
+
+Next.js 模式：
+Next.js 项目（前端 + 后端）
+├─ 一个项目搞定
+├─ 无需 CORS 配置
+└─ 部署简单
+```
+
+#### 🎯 核心特点
 
 ```
 ┌─────────────────────────────────────────┐
-│        Next.js 缓存体系全景              │
+│         API Routes 核心特点              │
 ├─────────────────────────────────────────┤
 │                                         │
-│  1. Data Cache （数据缓存）              │
-│     ↓ 缓存 fetch 请求的数据              │
-│     ↓ 减少重复API调用                   │
+│  1. 📁 文件系统路由                      │
+│     └─ app/api/users/route.ts          │
+│        → /api/users                    │
 │                                         │
-│  2. Full Route Cache （整页缓存）        │
-│     ↓ 缓存整个页面的渲染结果             │
-│     ↓ 提升 SSR 性能                     │
+│  2. 🔌 完整的 HTTP 支持                  │
+│     └─ GET, POST, PUT, DELETE...       │
 │                                         │
-│  3. Router Cache （路由缓存）            │
-│     ↓ 客户端路由缓存                    │
-│     ↓ 减少服务器请求                    │
+│  3. 🔒 服务端执行                        │
+│     └─ 安全，不暴露敏感信息              │
 │                                         │
-│  4. Server Components Cache              │
-│     ↓ 服务端组件渲染缓存                │
-│     ↓ 结合 React cache() 提升性能       │
+│  4. 🚀 自动优化                         │
+│     └─ 按需加载，性能优秀                │
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
-#### 🎯 Data Cache（本教程重点）
+#### 📊 文件系统路由规则
 
-**Data Cache** 是最常用的缓存类型，用于缓存 **fetch 请求**的数据。
+| 文件路径 | API 路径 | 说明 |
+|---------|---------|------|
+| `app/api/route.ts` | `/api` | 根路由 |
+| `app/api/users/route.ts` | `/api/users` | 用户路由 |
+| `app/api/users/[id]/route.ts` | `/api/users/123` | 动态路由 |
+| `app/api/auth/login/route.ts` | `/api/auth/login` | 嵌套路由 |
 
-**特点：**
-- ✅ 自动缓存 fetch 请求
-- ✅ 支持自动失效（revalidate）
-- ✅ 支持手动刷新（revalidateTag）
-- ✅ 减少数据库/API 压力
-
-#### 📊 缓存的价值
-
-| 场景 | 无缓存 | 有缓存 |
-|------|--------|--------|
-| **响应时间** | 500ms | 10ms |
-| **服务器压力** | 每次查询数据库 | 命中缓存无压力 |
-| **成本** | API调用费用高 | 显著降低成本 |
-| **用户体验** | 等待时间长 | 秒开页面 |
-
-#### 🔍 缓存的工作流程
+#### 🔍 工作流程
 
 ```
-第一次请求页面
+浏览器发起请求
   ↓
-执行 fetch('/api/data')
+fetch('/api/users')
   ↓
-请求API，获取数据（慢，500ms）
+Next.js 路由匹配
   ↓
-数据存入 Data Cache
+找到 app/api/users/route.ts
   ↓
-返回数据给页面
+执行对应的 HTTP 方法函数（GET/POST...）
   ↓
-────────────────────────────────
-第二次请求页面（2分钟内）
+返回响应数据
   ↓
-执行 fetch('/api/data')
-  ↓
-从 Data Cache 读取（快，10ms）✅
-  ↓
-直接返回缓存数据
-  ↓
-────────────────────────────────
-第三次请求页面（2分钟后）
-  ↓
-缓存已过期（revalidate: 120）
-  ↓
-重新请求API，刷新缓存
-  ↓
-返回最新数据
+浏览器接收数据
 ```
-
-### 🧪 实验验证
-
-**实验 1：观察缓存效果**
-
-1. 访问缓存演示页面：http://localhost:3000/cache-dashboard
-2. 查看页面顶部的"数据生成时间"（如：2024-01-15 14:30:15）
-3. 按 F5 多次刷新页面
-4. **时间戳不变** = 缓存生效 ✅
-
-**实验 2：验证缓存失效**
-
-1. 等待 2 分钟（revalidate: 120 秒）
-2. 再次刷新页面
-3. **时间戳更新** = 缓存自动失效 ✅
-
----
-
-## 知识点二：Data Cache 数据缓存
-
-### 📚 概念讲解
-
-**Data Cache** 通过 `fetch` 的 `next` 配置参数实现数据缓存。
-
-#### 🔑 核心参数
-
-```typescript
-fetch(url, {
-  next: {
-    revalidate: 60,      // 自动失效时间（秒）
-    tags: ['dashboard']  // 缓存标签（用于手动刷新）
-  },
-  cache: 'force-cache'   // 缓存策略
-});
-```
-
-**参数说明：**
-
-| 参数 | 说明 | 示例 |
-|------|------|------|
-| `revalidate` | 缓存有效期（秒） | `60` = 60秒后自动失效 |
-| `tags` | 缓存标签数组 | `['report', 'dashboard']` |
-| `cache` | 缓存策略 | `'force-cache'` / `'no-store'` |
-
-#### 📊 cache 策略对比
-
-| 策略 | 说明 | 使用场景 |
-|------|------|----------|
-| `'force-cache'` | **强制缓存**（默认） | 数据不常变化 |
-| `'no-store'` | **不缓存** | 实时数据（股票、聊天） |
-| `'reload'` | 强制重新获取 | 忽略缓存 |
-
-#### 🔍 revalidate 详解
-
-**revalidate** 是缓存的"保质期"：
-
-```typescript
-// 60秒后自动失效
-{ revalidate: 60 }
-
-// 0 = 不缓存（等同于 cache: 'no-store'）
-{ revalidate: 0 }
-
-// false = 永久缓存（除非手动刷新）
-{ revalidate: false }
-```
-
-**工作原理：**
-
-```
-时间轴：
-0s    → fetch 数据，写入缓存
-10s   → 读缓存（✅ 命中）
-30s   → 读缓存（✅ 命中）
-60s   → 读缓存（✅ 命中）
-61s   → 缓存过期，重新 fetch
-62s   → 读缓存（✅ 新数据）
-```
-
-#### 🏷️ tags 详解
-
-**tags** 为缓存打标签，便于**批量刷新**：
-
-```typescript
-// 标记为 'report' 缓存组
-fetch('/api/report', {
-  next: { tags: ['report'] }
-});
-
-// 标记为 'dashboard' 缓存组
-fetch('/api/dashboard', {
-  next: { tags: ['dashboard'] }
-});
-
-// 刷新所有 'report' 标签的缓存
-revalidateTag('report');
-```
-
-**使用场景：**
-- ✅ 数据更新后，刷新相关的所有页面
-- ✅ 内容管理系统（CMS）发布新文章
-- ✅ 电商后台修改商品信息
 
 ### 💻 代码实现
 
-#### 示例 1：基础缓存用法
+#### 示例 1：最简单的 API
 
-**场景**：获取报表数据，缓存 2 分钟
+**场景**：创建一个返回 Hello World 的 API
 
 ```typescript
-// app/dashboard/page.tsx
+// app/api/hello/route.ts
 
-async function getReportData() {
-  // ⭐ 核心：fetch 缓存配置
-  const res = await fetch('https://api.example.com/report', {
-    next: {
-      revalidate: 120,  // 120秒后自动失效
-      tags: ['report']  // 打上 'report' 标签
-    },
-    cache: 'force-cache' // 强制缓存（默认值）
+import { NextResponse } from 'next/server';
+
+/**
+ * GET /api/hello
+ * 最简单的 API 示例
+ */
+export async function GET() {
+  return NextResponse.json({
+    message: 'Hello World',
+    timestamp: new Date().toISOString(),
   });
-
-  return res.json();
-}
-
-export default async function Dashboard() {
-  const data = await getReportData();
-
-  return (
-    <div>
-      <h1>数据报表</h1>
-      <p>生成时间：{data.timestamp}</p>
-      {/* 渲染数据 */}
-    </div>
-  );
 }
 ```
 
-**执行流程：**
+**测试：**
 
-```
-用户访问 /dashboard
-  ↓
-调用 getReportData()
-  ↓
-执行 fetch('https://api.example.com/report')
-  ↓
-Next.js 检查 Data Cache
-  ├─ 有缓存且未过期 → 返回缓存数据 ✅
-  └─ 无缓存或已过期 → 请求API → 写入缓存 → 返回数据
-  ↓
-渲染页面
+```bash
+curl http://localhost:3000/api/hello
 ```
 
-#### 示例 2：不同场景的缓存配置
+**响应：**
 
-**场景 1：新闻列表（更新频繁）**
+```json
+{
+  "message": "Hello World",
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+#### 示例 2：带参数的 API
+
+**场景**：根据用户 ID 返回用户信息
 
 ```typescript
-// 5 分钟缓存
-const res = await fetch('/api/news', {
-  next: { revalidate: 300, tags: ['news'] }
-});
-```
+// app/api/users/[id]/route.ts
 
-**场景 2：用户信息（几乎不变）**
+import { NextRequest, NextResponse } from 'next/server';
 
-```typescript
-// 1 小时缓存
-const res = await fetch('/api/user/profile', {
-  next: { revalidate: 3600, tags: ['user-profile'] }
-});
-```
+/**
+ * GET /api/users/[id]
+ * 动态路由参数
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
-**场景 3：实时股票（不缓存）**
-
-```typescript
-// 不缓存
-const res = await fetch('/api/stock/price', {
-  cache: 'no-store'  // 每次都请求最新数据
-});
-```
-
-**场景 4：静态内容（永久缓存）**
-
-```typescript
-// 永久缓存（除非手动刷新）
-const res = await fetch('/api/config', {
-  next: { revalidate: false, tags: ['config'] }
-});
-```
-
-#### 示例 3：多数据源并发缓存
-
-**场景**：仪表盘需要同时获取多个数据
-
-```typescript
-async function getDashboardData() {
-  // 并发请求，各自缓存
-  const [users, orders, revenue] = await Promise.all([
-    fetch('/api/users', {
-      next: { revalidate: 600, tags: ['users'] }
-    }),
-    fetch('/api/orders', {
-      next: { revalidate: 300, tags: ['orders'] }
-    }),
-    fetch('/api/revenue', {
-      next: { revalidate: 120, tags: ['revenue'] }
-    })
-  ]);
-
-  return {
-    users: await users.json(),
-    orders: await orders.json(),
-    revenue: await revenue.json(),
+  // 模拟数据库查询
+  const user = {
+    id,
+    name: `User ${id}`,
+    email: `user${id}@example.com`,
   };
+
+  return NextResponse.json({
+    success: true,
+    data: user,
+  });
 }
 ```
 
-**优势：**
-- ✅ 并发请求，速度快
-- ✅ 各自独立缓存，互不影响
-- ✅ 可以针对性刷新某个数据
+**测试：**
+
+```bash
+curl http://localhost:3000/api/users/123
+```
+
+**响应：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123",
+    "name": "User 123",
+    "email": "user123@example.com"
+  }
+}
+```
+
+#### 示例 3：查询参数解析
+
+**场景**：支持分页的用户列表
+
+```typescript
+// app/api/users/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+
+/**
+ * GET /api/users?page=1&pageSize=10
+ * 查询参数解析
+ */
+export async function GET(request: NextRequest) {
+  // 1. 解析 URL 查询参数
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('pageSize') || '10');
+
+  // 2. 模拟数据
+  const users = Array.from({ length: pageSize }, (_, i) => ({
+    id: (page - 1) * pageSize + i + 1,
+    name: `User ${(page - 1) * pageSize + i + 1}`,
+  }));
+
+  // 3. 返回响应
+  return NextResponse.json({
+    success: true,
+    data: {
+      users,
+      pagination: {
+        page,
+        pageSize,
+        total: 100,
+      },
+    },
+  });
+}
+```
+
+**测试：**
+
+```bash
+curl "http://localhost:3000/api/users?page=2&pageSize=5"
+```
 
 ### ⚠️ 注意事项
 
-**❌ 不会被缓存的情况：**
+**❌ 错误示例：**
 
 ```typescript
-// 1. POST 请求不会缓存
-fetch('/api/data', { method: 'POST' });
+// ❌ 错误：文件名不是 route.ts
+// app/api/users/users.ts  <- 错误
 
-// 2. 动态 headers（如 Cookie）
-fetch('/api/data', {
-  headers: { Cookie: document.cookie }
-});
-
-// 3. cache: 'no-store'
-fetch('/api/data', { cache: 'no-store' });
-
-// 4. revalidate: 0
-fetch('/api/data', { next: { revalidate: 0 } });
+// ✅ 正确：必须命名为 route.ts
+// app/api/users/route.ts  <- 正确
 ```
 
-**✅ 会被缓存的情况：**
+**❌ 错误示例：**
 
 ```typescript
-// 1. GET 请求 + 缓存配置
-fetch('/api/data', {
-  next: { revalidate: 60 }
-});
+// ❌ 错误：函数名不匹配 HTTP 方法
+export async function getUsers() { ... }
 
-// 2. 静态 headers
-fetch('/api/data', {
-  headers: { 'Content-Type': 'application/json' }
-});
+// ✅ 正确：函数名必须是 HTTP 方法
+export async function GET() { ... }
 ```
 
 ---
 
-## 知识点三：缓存失效策略
+## 知识点二：处理不同 HTTP 方法
 
 ### 📚 概念讲解
 
-缓存需要在**性能**和**数据新鲜度**之间取得平衡。Next.js 提供了多种失效策略。
+#### 🔑 HTTP 方法对应关系
 
-#### 🔑 三种失效方式
+API Routes 支持所有标准 HTTP 方法，通过导出同名函数实现。
 
-```
-┌─────────────────────────────────────────┐
-│         缓存失效策略                     │
-├─────────────────────────────────────────┤
-│                                         │
-│  1. ⏰ 定时失效（自动）                  │
-│     └─ revalidate: 60                  │
-│     └─ 60秒后自动刷新                   │
-│     └─ 适合：新闻、博客                 │
-│                                         │
-│  2. 🔄 手动失效（主动）                  │
-│     └─ revalidatePath('/news')         │
-│     └─ revalidateTag('report')         │
-│     └─ 适合：内容发布、数据变更         │
-│                                         │
-│  3. 🚫 不缓存（实时）                    │
-│     └─ cache: 'no-store'               │
-│     └─ 每次都获取最新数据               │
-│     └─ 适合：股票、聊天、实时数据       │
-│                                         │
-└─────────────────────────────────────────┘
-```
+| HTTP 方法 | Next.js 函数 | 用途 | 示例 |
+|-----------|--------------|------|------|
+| `GET` | `export async function GET()` | 获取数据 | 查询用户列表 |
+| `POST` | `export async function POST()` | 创建数据 | 创建新用户 |
+| `PUT` | `export async function PUT()` | 更新数据（完整） | 更新用户信息 |
+| `PATCH` | `export async function PATCH()` | 更新数据（部分） | 修改用户名 |
+| `DELETE` | `export async function DELETE()` | 删除数据 | 删除用户 |
 
-#### 📊 策略选择对比
-
-| 策略 | 数据新鲜度 | 性能 | 服务器压力 | 适用场景 |
-|------|------------|------|------------|----------|
-| **定时失效** | ⭐⭐⭐ 中等 | ⭐⭐⭐⭐⭐ 高 | ⭐⭐ 低 | 新闻、博客 |
-| **手动失效** | ⭐⭐⭐⭐⭐ 高 | ⭐⭐⭐⭐ 高 | ⭐⭐ 低 | CMS、电商 |
-| **不缓存** | ⭐⭐⭐⭐⭐ 实时 | ⭐ 低 | ⭐⭐⭐⭐⭐ 高 | 股票、聊天 |
-
-#### 🔍 定时失效（revalidate）详解
-
-**原理**：设置缓存"保质期"，到期自动刷新
-
-```typescript
-fetch('/api/data', {
-  next: { revalidate: 120 }  // 120秒后自动失效
-});
-```
-
-**时间线示例：**
+#### 📊 RESTful API 设计规范
 
 ```
-00:00  → 用户A访问，缓存数据（数据版本：v1）
-00:30  → 用户B访问，读缓存 v1 ✅
-01:00  → 用户C访问，读缓存 v1 ✅
-02:00  → 用户D访问，读缓存 v1 ✅
-02:01  → 缓存过期（120秒）
-02:01  → 用户E访问，重新fetch，缓存新数据（数据版本：v2）
-02:30  → 用户F访问，读缓存 v2 ✅
+资源：用户（users）
+
+GET    /api/users          获取用户列表
+GET    /api/users/123      获取单个用户
+POST   /api/users          创建新用户
+PUT    /api/users/123      更新用户（完整）
+PATCH  /api/users/123      更新用户（部分）
+DELETE /api/users/123      删除用户
 ```
 
-**优势：**
-- ✅ 自动化，无需手动干预
-- ✅ 性能好，大部分请求命中缓存
-- ✅ 数据有一定新鲜度保证
-
-**劣势：**
-- ⚠️ 可能有延迟（最多 revalidate 秒）
-- ⚠️ 不能立即更新
-
-#### 🔄 手动失效详解
-
-**原理**：数据变更时，主动清除缓存
-
-```typescript
-// 数据更新后，手动刷新缓存
-revalidateTag('report');    // 刷新所有 'report' 标签的缓存
-revalidatePath('/news');    // 刷新 /news 页面的缓存
-```
-
-**使用场景：**
+#### 🔍 方法选择原则
 
 ```
-CMS 发布新文章
-  ↓
-调用 API: POST /api/articles
-  ↓
-文章保存成功
-  ↓
-触发 revalidateTag('articles')  ⭐
-  ↓
-所有文章列表页缓存被清除
-  ↓
-用户下次访问时，看到最新文章 ✅
-```
+获取数据？
+  └─ 使用 GET
 
-**优势：**
-- ✅ 数据实时性高
-- ✅ 按需刷新，不浪费
-- ✅ 结合定时失效，双重保障
+创建新资源？
+  └─ 使用 POST
 
-### 💻 代码实现
+完全替换资源？
+  └─ 使用 PUT
 
-#### 示例 1：定时失效
+部分修改资源？
+  └─ 使用 PATCH
 
-**场景**：新闻列表，每 5 分钟自动刷新
-
-```typescript
-// app/news/page.tsx
-
-async function getNewsList() {
-  const res = await fetch('/api/news', {
-    next: {
-      revalidate: 300,  // 5分钟自动失效
-      tags: ['news']
-    }
-  });
-
-  return res.json();
-}
-
-export default async function NewsPage() {
-  const news = await getNewsList();
-
-  return (
-    <div>
-      <h1>新闻列表</h1>
-      {news.map(item => (
-        <article key={item.id}>
-          <h2>{item.title}</h2>
-          <p>{item.publishTime}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-```
-
-**效果：**
-- 0-5分钟：所有用户看到相同的缓存数据
-- 5分钟后：第一个访问的用户触发刷新，获取最新数据
-- 5-10分钟：其他用户看到刷新后的数据
-
-#### 示例 2：组合策略（推荐）
-
-**场景**：商品列表，5分钟自动刷新 + 手动刷新
-
-```typescript
-// app/products/page.tsx
-
-async function getProducts() {
-  const res = await fetch('/api/products', {
-    next: {
-      revalidate: 300,        // 5分钟自动失效（兜底）
-      tags: ['products']      // 支持手动刷新
-    }
-  });
-
-  return res.json();
-}
-
-export default async function ProductsPage() {
-  const products = await getProducts();
-
-  return <ProductList products={products} />;
-}
-```
-
-**配套API：商品更新时手动刷新**
-
-```typescript
-// app/api/products/[id]/route.ts
-import { revalidateTag } from 'next/cache';
-
-export async function PUT(request, { params }) {
-  // 更新商品
-  await updateProduct(params.id, data);
-
-  // 手动刷新缓存
-  revalidateTag('products');
-
-  return Response.json({ success: true });
-}
-```
-
-**优势：**
-- ✅ 商品更新后，立即刷新（手动）
-- ✅ 即使忘记手动刷新，5分钟后也会自动刷新（兜底）
-
-#### 示例 3：不缓存（实时数据）
-
-**场景**：股票价格，必须实时
-
-```typescript
-// app/stock/page.tsx
-
-async function getStockPrice() {
-  const res = await fetch('/api/stock/price', {
-    cache: 'no-store'  // 不缓存，每次都请求最新数据
-  });
-
-  return res.json();
-}
-
-export default async function StockPage() {
-  const price = await getStockPrice();
-
-  return (
-    <div>
-      <h1>股票价格</h1>
-      <p>当前价格：¥{price}</p>
-      <p>更新时间：{new Date().toLocaleString()}</p>
-    </div>
-  );
-}
-```
-
----
-
-## 知识点四：手动刷新缓存
-
-### 📚 概念讲解
-
-手动刷新缓存是指在**数据变更时**，主动清除相关的缓存，使用户立即看到最新数据。
-
-#### 🔑 两个核心函数
-
-```typescript
-import { revalidatePath, revalidateTag } from 'next/cache';
-
-// 1. 刷新指定路径的缓存
-revalidatePath('/news');          // 刷新 /news 页面
-revalidatePath('/news/[id]');     // 刷新所有动态路由
-
-// 2. 刷新指定标签的所有缓存
-revalidateTag('articles');        // 刷新所有带 'articles' 标签的缓存
-```
-
-#### 📊 两种方式对比
-
-| 方式 | 范围 | 适用场景 |
-|------|------|----------|
-| `revalidatePath` | 刷新**单个路径** | 文章详情页更新 |
-| `revalidateTag` | 刷新**一组缓存** | 文章列表、详情都要更新 |
-
-#### 🔍 revalidatePath 详解
-
-**用途**：刷新指定路径（页面）的缓存
-
-```typescript
-// 刷新新闻列表页
-revalidatePath('/news');
-
-// 刷新特定文章详情页
-revalidatePath('/news/123');
-
-// 刷新所有文章详情页（动态路由）
-revalidatePath('/news/[id]');
-```
-
-**工作原理：**
-
-```
-用户编辑文章ID=123
-  ↓
-调用 API: PUT /api/articles/123
-  ↓
-文章更新成功
-  ↓
-revalidatePath('/news/123')  ⭐
-  ↓
-清除 /news/123 的缓存
-  ↓
-用户下次访问 /news/123，看到最新内容 ✅
-```
-
-#### 🏷️ revalidateTag 详解
-
-**用途**：刷新所有带指定标签的缓存（批量刷新）
-
-```typescript
-// 刷新所有带 'articles' 标签的缓存
-revalidateTag('articles');
-```
-
-**使用场景：**
-
-```typescript
-// 文章列表（打标签）
-fetch('/api/articles', {
-  next: { tags: ['articles'] }
-});
-
-// 文章详情（打标签）
-fetch('/api/articles/123', {
-  next: { tags: ['articles', 'article-123'] }
-});
-
-// 发布新文章后，刷新所有文章相关的缓存
-revalidateTag('articles');
-// 👆 列表和详情都会被刷新
-```
-
-**优势：**
-- ✅ 一次刷新，影响多个页面
-- ✅ 不需要知道具体URL
-- ✅ 灵活组合标签
-
-#### 🔒 安全性：权限验证
-
-**重要：** 缓存刷新API必须加权限验证，防止恶意刷新！
-
-```typescript
-// ❌ 危险：无权限验证
-export async function POST(request) {
-  revalidateTag('articles');
-  return Response.json({ success: true });
-}
-
-// ✅ 安全：有权限验证
-export async function POST(request) {
-  const { secret } = await request.json();
-
-  // 验证密钥
-  if (secret !== process.env.REVALIDATE_SECRET) {
-    return Response.json(
-      { error: '无权限' },
-      { status: 401 }
-    );
-  }
-
-  revalidateTag('articles');
-  return Response.json({ success: true });
-}
+删除资源？
+  └─ 使用 DELETE
 ```
 
 ### 💻 代码实现
 
-#### 示例 1：创建缓存刷新 API
+#### 示例 1：完整的 CRUD API
 
-**位置**：`app/api/cache-revalidate/route.ts`
+**场景**：用户管理的完整 API
 
 ```typescript
+// app/api/users/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath, revalidateTag } from 'next/cache';
+
+// 模拟数据库
+let users = [
+  { id: '1', name: 'Alice', email: 'alice@example.com' },
+  { id: '2', name: 'Bob', email: 'bob@example.com' },
+];
 
 /**
- * 缓存刷新 API
- *
- * POST /api/cache-revalidate
- * Body: { path?, tag?, secret }
+ * GET /api/users
+ * 获取用户列表
+ */
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    success: true,
+    data: users,
+  });
+}
+
+/**
+ * POST /api/users
+ * 创建新用户
  */
 export async function POST(request: NextRequest) {
   try {
+    // 解析请求体
     const body = await request.json();
-    const { path, tag, secret } = body;
+    const { name, email } = body;
 
-    // 1. 权限验证 ⭐ 非常重要！
-    if (secret !== process.env.REVALIDATE_SECRET) {
+    // 验证
+    if (!name || !email) {
       return NextResponse.json(
-        { success: false, message: '无权限' },
-        { status: 401 }
+        { success: false, message: '缺少必填字段' },
+        { status: 400 }
       );
     }
 
-    // 2. 刷新指定路径
-    if (path) {
-      revalidatePath(path);
-      console.log(`[缓存刷新] 路径: ${path}`);
-    }
+    // 创建用户
+    const newUser = {
+      id: Date.now().toString(),
+      name,
+      email,
+    };
 
-    // 3. 刷新指定标签
-    if (tag) {
-      revalidateTag(tag);
-      console.log(`[缓存刷新] 标签: ${tag}`);
-    }
+    users.push(newUser);
 
-    // 4. 返回成功
-    return NextResponse.json({
-      success: true,
-      revalidated: true,
-      path,
-      tag,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('[缓存刷新失败]', error);
     return NextResponse.json(
-      { success: false, message: '刷新失败' },
+      { success: true, data: newUser },
+      { status: 201 }  // 201 Created
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: '创建失败' },
       { status: 500 }
     );
   }
 }
 ```
 
-#### 示例 2：前端调用刷新 API
+```typescript
+// app/api/users/[id]/route.ts
 
-**场景**：用户点击按钮，手动刷新数据
+import { NextRequest, NextResponse } from 'next/server';
+
+// 引用同一个数据
+import { users } from '../route';
+
+/**
+ * GET /api/users/[id]
+ * 获取单个用户
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const user = users.find(u => u.id === params.id);
+
+  if (!user) {
+    return NextResponse.json(
+      { success: false, message: '用户不存在' },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: user,
+  });
+}
+
+/**
+ * PUT /api/users/[id]
+ * 完整更新用户
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await request.json();
+    const { name, email } = body;
+
+    const index = users.findIndex(u => u.id === params.id);
+
+    if (index === -1) {
+      return NextResponse.json(
+        { success: false, message: '用户不存在' },
+        { status: 404 }
+      );
+    }
+
+    // 完整替换
+    users[index] = {
+      id: params.id,
+      name,
+      email,
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: users[index],
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: '更新失败' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/users/[id]
+ * 部分更新用户
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await request.json();
+
+    const user = users.find(u => u.id === params.id);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: '用户不存在' },
+        { status: 404 }
+      );
+    }
+
+    // 部分更新
+    Object.assign(user, body);
+
+    return NextResponse.json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: '更新失败' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/users/[id]
+ * 删除用户
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const index = users.findIndex(u => u.id === params.id);
+
+  if (index === -1) {
+    return NextResponse.json(
+      { success: false, message: '用户不存在' },
+      { status: 404 }
+    );
+  }
+
+  users.splice(index, 1);
+
+  return NextResponse.json({
+    success: true,
+    message: '删除成功',
+  });
+}
+```
+
+**测试：**
+
+```bash
+# 获取列表
+curl http://localhost:3000/api/users
+
+# 创建用户
+curl -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Charlie","email":"charlie@example.com"}'
+
+# 获取单个用户
+curl http://localhost:3000/api/users/1
+
+# 完整更新
+curl -X PUT http://localhost:3000/api/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice Updated","email":"alice-new@example.com"}'
+
+# 部分更新
+curl -X PATCH http://localhost:3000/api/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice Modified"}'
+
+# 删除用户
+curl -X DELETE http://localhost:3000/api/users/1
+```
+
+---
+
+## 知识点三：请求体解析
+
+### 📚 概念讲解
+
+#### 🔑 常见请求体类型
+
+API Routes 需要处理不同类型的请求体：
+
+| Content-Type | 说明 | 使用场景 |
+|--------------|------|----------|
+| `application/json` | JSON 数据 | 大多数 API 请求 |
+| `multipart/form-data` | 表单数据（含文件） | 文件上传 |
+| `application/x-www-form-urlencoded` | 表单数据 | 传统表单提交 |
+| `text/plain` | 纯文本 | 简单文本传输 |
+
+#### 📊 解析方法对比
 
 ```typescript
-// components/RefreshButton.tsx
+// 1. JSON 解析
+const body = await request.json();
+
+// 2. FormData 解析
+const formData = await request.formData();
+
+// 3. 文本解析
+const text = await request.text();
+
+// 4. 二进制解析
+const buffer = await request.arrayBuffer();
+```
+
+### 💻 代码实现
+
+#### 示例 1：JSON 请求体解析
+
+**实际应用**：本项目的登录 API
+
+```typescript
+// app/api/auth/login/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    // 1. 解析 JSON 请求体
+    const body = await request.json();
+    const { username, password } = body;
+
+    // 2. 参数验证
+    if (!username || !password) {
+      return NextResponse.json(
+        { success: false, message: '用户名和密码不能为空' },
+        { status: 400 }
+      );
+    }
+
+    // 3. 业务逻辑（查找用户）
+    const users = [
+      { username: 'admin', password: 'admin123', role: 'admin' },
+      { username: 'user', password: 'user123', role: 'user' },
+    ];
+
+    const user = users.find(
+      u => u.username === username && u.password === password
+    );
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: '用户名或密码错误' },
+        { status: 401 }
+      );
+    }
+
+    // 4. 生成 Token（简化版）
+    const token = Buffer.from(
+      JSON.stringify({
+        username: user.username,
+        role: user.role,
+        exp: Date.now() + 24 * 60 * 60 * 1000,
+      })
+    ).toString('base64');
+
+    // 5. 返回成功响应
+    return NextResponse.json({
+      success: true,
+      message: '登录成功',
+      data: {
+        username: user.username,
+        role: user.role,
+        token,
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: '登录失败' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+**前端调用：**
+
+```typescript
+const response = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    username: 'admin',
+    password: 'admin123',
+  }),
+});
+
+const result = await response.json();
+console.log(result);
+// { success: true, data: { username: 'admin', token: '...' } }
+```
+
+#### 示例 2：FormData 请求体解析
+
+**实际应用**：本项目的图片上传 API
+
+```typescript
+// app/api/images/upload/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    // 1. 验证 Authorization Header
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, message: '未授权' },
+        { status: 401 }
+      );
+    }
+
+    // 2. 解析 FormData
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json(
+        { success: false, message: '请选择文件' },
+        { status: 400 }
+      );
+    }
+
+    // 3. 验证文件类型
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, message: '不支持的文件类型' },
+        { status: 400 }
+      );
+    }
+
+    // 4. 验证文件大小（5MB）
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { success: false, message: '文件大小不能超过 5MB' },
+        { status: 400 }
+      );
+    }
+
+    // 5. 保存文件信息
+    const imageData = {
+      id: Date.now().toString(),
+      filename: file.name,
+      size: file.size,
+      type: file.type,
+      uploadTime: new Date().toISOString(),
+    };
+
+    return NextResponse.json({
+      success: true,
+      message: '上传成功',
+      data: imageData,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: '上传失败' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+**前端调用：**
+
+```typescript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('/api/images/upload', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+  body: formData,  // 注意：不要设置 Content-Type
+});
+```
+
+---
+
+## 知识点四：文件上传处理
+
+### 📚 概念讲解
+
+#### 🔑 文件上传流程
+
+```
+用户选择文件
+  ↓
+前端：创建 FormData
+  ↓
+前端：append 文件到 FormData
+  ↓
+前端：fetch 发送到 API
+  ↓
+后端：解析 FormData
+  ↓
+后端：验证文件类型和大小
+  ↓
+后端：保存文件
+  ↓
+后端：返回文件信息
+  ↓
+前端：显示上传结果
+```
+
+#### 📊 文件验证要点
+
+| 验证项 | 原因 | 实现方式 |
+|-------|------|----------|
+| 文件类型 | 安全（防止上传恶意文件） | 检查 `file.type` |
+| 文件大小 | 性能和存储 | 检查 `file.size` |
+| 文件名 | 防止路径遍历攻击 | 过滤特殊字符 |
+| 权限验证 | 防止未授权上传 | 验证 Token |
+
+### 💻 代码实现
+
+#### 示例 1：前端文件上传组件
+
+**实际应用**：本项目的 UploadForm 组件
+
+```typescript
+// components/image-share/UploadForm.tsx
 'use client';
 
 import { useState } from 'react';
 
-export default function RefreshButton() {
+export default function UploadForm({ token, onUploadSuccess }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  const handleRefresh = async () => {
+  // 1. 文件选择处理
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+
+      // 生成预览图
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+  };
+
+  // 2. 上传处理
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!file) {
+      alert('请选择图片');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch('/api/cache-revalidate', {
+      // 3. 创建 FormData
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // 4. 发送请求
+      const response = await fetch('/api/images/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tag: 'report',
-          secret: 'my-secret-key-123'
-        })
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (data.success) {
-        alert('缓存刷新成功！');
-        window.location.reload(); // 刷新页面
+      if (result.success) {
+        alert('上传成功！');
+        onUploadSuccess();
+        setFile(null);
+        setPreview('');
       } else {
-        alert(`刷新失败：${data.message}`);
+        alert(`上传失败：${result.message}`);
       }
     } catch (error) {
-      alert('刷新失败');
+      alert('上传失败，请稍后重试');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <button onClick={handleRefresh} disabled={loading}>
-      {loading ? '刷新中...' : '🔄 刷新缓存'}
-    </button>
+    <form onSubmit={handleSubmit}>
+      {/* 文件选择 */}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+      />
+
+      {/* 预览 */}
+      {preview && <img src={preview} alt="预览" />}
+
+      {/* 上传按钮 */}
+      <button type="submit" disabled={loading || !file}>
+        {loading ? '上传中...' : '上传'}
+      </button>
+    </form>
   );
 }
 ```
 
-#### 示例 3：内容发布时自动刷新
+#### 示例 2：后端文件处理 API
 
-**场景**：CMS 发布文章后，自动刷新缓存
+**完整代码见**：[app/api/images/upload/route.ts](app/api/images/upload/route.ts:1-127)
+
+**关键点：**
 
 ```typescript
-// app/api/articles/route.ts
-import { revalidateTag } from 'next/cache';
+// 1. 验证身份
+const authHeader = request.headers.get('authorization');
+const token = authHeader?.substring(7);  // 去掉 'Bearer '
+const user = verifyToken(token);
 
-export async function POST(request) {
+// 2. 解析 FormData
+const formData = await request.formData();
+const file = formData.get('file') as File;
+
+// 3. 验证文件类型
+const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+if (!allowedTypes.includes(file.type)) {
+  return NextResponse.json({ error: '不支持的文件类型' }, { status: 400 });
+}
+
+// 4. 验证文件大小
+const maxSize = 5 * 1024 * 1024;  // 5MB
+if (file.size > maxSize) {
+  return NextResponse.json({ error: '文件过大' }, { status: 400 });
+}
+
+// 5. 保存文件信息（实际项目应保存到服务器或云存储）
+const imageData = {
+  id: Date.now().toString(),
+  filename: file.name,
+  size: file.size,
+  type: file.type,
+  uploadTime: new Date().toISOString(),
+  uploader: user.username,
+};
+
+return NextResponse.json({ success: true, data: imageData });
+```
+
+---
+
+## 知识点五：身份验证与授权
+
+### 📚 概念讲解
+
+#### 🔑 认证 vs 授权
+
+```
+认证（Authentication）：你是谁？
+  └─ 登录验证
+  └─ Token 验证
+
+授权（Authorization）：你能做什么？
+  └─ 权限检查
+  └─ 角色判断
+```
+
+#### 📊 JWT Token 工作流程
+
+```
+1. 用户登录
+   ↓
+2. 服务器验证用户名密码
+   ↓
+3. 生成 JWT Token
+   ↓
+4. 返回 Token 给前端
+   ↓
+5. 前端保存 Token（localStorage）
+   ↓
+6. 后续请求携带 Token
+   ↓
+7. 服务器验证 Token
+   ↓
+8. 验证通过，执行业务逻辑
+```
+
+#### 🔍 Token 格式
+
+```
+Authorization: Bearer <token>
+
+示例：
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 💻 代码实现
+
+#### 示例 1：Token 生成
+
+**实际应用**：[app/api/auth/login/route.ts](app/api/auth/login/route.ts:1-90)
+
+```typescript
+/**
+ * 生成 Token（简化版）
+ * 实际项目应使用 jsonwebtoken 库
+ */
+function generateToken(username: string, role: string): string {
+  const payload = {
+    username,
+    role,
+    exp: Date.now() + 24 * 60 * 60 * 1000,  // 24小时过期
+  };
+
+  // 简化版：Base64 编码
+  // 实际项目：使用 jsonwebtoken 签名
+  return Buffer.from(JSON.stringify(payload)).toString('base64');
+}
+
+// 使用
+const token = generateToken('admin', 'admin');
+```
+
+#### 示例 2：Token 验证
+
+**实际应用**：[app/api/images/upload/route.ts](app/api/images/upload/route.ts:15-32)
+
+```typescript
+/**
+ * 验证 Token
+ */
+function verifyToken(token: string): { username: string; role: string } | null {
   try {
-    // 1. 保存文章
-    const article = await request.json();
-    await saveArticle(article);
+    // 解码 Token
+    const payload = JSON.parse(
+      Buffer.from(token, 'base64').toString('utf-8')
+    );
 
-    // 2. 自动刷新缓存 ⭐
-    revalidateTag('articles');
+    // 检查是否过期
+    if (payload.exp < Date.now()) {
+      return null;
+    }
 
-    return Response.json({
+    return {
+      username: payload.username,
+      role: payload.role,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// 使用
+const user = verifyToken(token);
+if (!user) {
+  return NextResponse.json({ error: 'Token 无效' }, { status: 401 });
+}
+```
+
+#### 示例 3：权限中间件
+
+**场景**：只允许管理员访问的 API
+
+```typescript
+// app/api/admin/users/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+
+function requireAdmin(token: string): boolean {
+  const user = verifyToken(token);
+  return user?.role === 'admin';
+}
+
+export async function GET(request: NextRequest) {
+  // 1. 提取 Token
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: '未授权' }, { status: 401 });
+  }
+
+  const token = authHeader.substring(7);
+
+  // 2. 验证管理员权限
+  if (!requireAdmin(token)) {
+    return NextResponse.json({ error: '权限不足' }, { status: 403 });
+  }
+
+  // 3. 执行业务逻辑
+  return NextResponse.json({
+    success: true,
+    data: {
+      users: [/* 用户列表 */],
+    },
+  });
+}
+```
+
+---
+
+## 知识点六：错误处理与响应规范
+
+### 📚 概念讲解
+
+#### 🔑 HTTP 状态码
+
+| 状态码 | 含义 | 使用场景 |
+|-------|------|----------|
+| `200` | OK | 成功 |
+| `201` | Created | 创建成功 |
+| `400` | Bad Request | 参数错误 |
+| `401` | Unauthorized | 未授权 |
+| `403` | Forbidden | 权限不足 |
+| `404` | Not Found | 资源不存在 |
+| `500` | Internal Server Error | 服务器错误 |
+
+#### 📊 统一响应格式
+
+```typescript
+// 成功响应
+{
+  success: true,
+  message: '操作成功',
+  data: { ... }
+}
+
+// 失败响应
+{
+  success: false,
+  message: '错误信息',
+  error: '详细错误（可选）'
+}
+```
+
+### 💻 代码实现
+
+#### 示例 1：统一错误处理
+
+```typescript
+// lib/api-error.ts
+
+export class ApiError extends Error {
+  statusCode: number;
+
+  constructor(message: string, statusCode: number = 500) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+// 使用
+if (!user) {
+  throw new ApiError('用户不存在', 404);
+}
+```
+
+#### 示例 2：Try-Catch 包装
+
+```typescript
+export async function POST(request: NextRequest) {
+  try {
+    // 业务逻辑
+    const body = await request.json();
+    // ...
+
+    return NextResponse.json({
       success: true,
-      message: '文章发布成功'
+      data: result,
     });
   } catch (error) {
-    return Response.json(
-      { success: false, message: '发布失败' },
+    console.error('[API Error]', error);
+
+    // 区分不同错误类型
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: error.statusCode }
+      );
+    }
+
+    // 未知错误
+    return NextResponse.json(
+      { success: false, message: '服务器错误' },
       { status: 500 }
     );
   }
 }
 ```
 
-**流程：**
-
-```
-管理员发布文章
-  ↓
-POST /api/articles
-  ↓
-文章保存到数据库
-  ↓
-revalidateTag('articles')  ⭐
-  ↓
-清除所有 'articles' 标签的缓存
-  ↓
-用户访问文章列表/详情
-  ↓
-缓存已清除，重新获取最新数据
-  ↓
-用户看到新发布的文章 ✅
-```
-
-#### 示例 4：商品更新时定向刷新
-
-**场景**：更新商品ID=123，只刷新这个商品的缓存
+#### 示例 3：参数验证
 
 ```typescript
-// app/api/products/[id]/route.ts
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { z } from 'zod';
 
-export async function PUT(request, { params }) {
-  const { id } = params;
+// 定义验证规则
+const LoginSchema = z.object({
+  username: z.string().min(3).max(20),
+  password: z.string().min(6),
+});
 
+export async function POST(request: NextRequest) {
   try {
-    // 1. 更新商品
-    await updateProduct(id, data);
+    const body = await request.json();
 
-    // 2. 刷新商品详情页
-    revalidatePath(`/products/${id}`);
+    // 验证参数
+    const result = LoginSchema.safeParse(body);
 
-    // 3. 刷新商品列表页
-    revalidateTag('products');
-
-    return Response.json({ success: true });
-  } catch (error) {
-    return Response.json({ success: false }, { status: 500 });
-  }
-}
-```
-
----
-
-## 知识点五：Server Components 缓存
-
-### 📚 概念讲解
-
-**Server Components** 是 React 18+ 的新特性，组件在服务端执行，可以直接访问数据库。
-
-#### 🔑 React cache() 函数
-
-`cache()` 用于缓存函数的执行结果，避免重复计算。
-
-```typescript
-import { cache } from 'react';
-
-// 缓存函数结果
-const getData = cache(async (id) => {
-  const data = await fetchData(id);
-  return data;
-});
-```
-
-**特点：**
-- ✅ 只在**同一次请求**中有效
-- ✅ 多次调用，只执行一次
-- ✅ 减少重复计算
-
-#### 📊 使用场景
-
-**场景**：多个组件需要相同的数据
-
-```
-页面布局
-├─ Header 组件（需要用户信息）
-├─ Sidebar 组件（需要用户信息）
-└─ Content 组件（需要用户信息）
-
-如果不用 cache()：
-  └─ 查询用户信息 3 次 ❌
-
-使用 cache()：
-  └─ 查询用户信息 1 次 ✅
-```
-
-### 💻 代码实现
-
-#### 示例 1：基础用法
-
-```typescript
-// lib/data.ts
-import { cache } from 'react';
-
-// 缓存用户查询
-export const getUser = cache(async (id: number) => {
-  console.log('查询用户', id);
-  const user = await db.user.findUnique({ where: { id } });
-  return user;
-});
-```
-
-```typescript
-// app/layout.tsx
-import { getUser } from '@/lib/data';
-
-export default async function Layout({ children }) {
-  const user = await getUser(1); // 第1次调用
-
-  return (
-    <div>
-      <Header user={user} />
-      {children}
-    </div>
-  );
-}
-```
-
-```typescript
-// app/page.tsx
-import { getUser } from '@/lib/data';
-
-export default async function Page() {
-  const user = await getUser(1); // 第2次调用，命中缓存 ✅
-
-  return <Profile user={user} />;
-}
-```
-
-**结果**：控制台只输出一次"查询用户 1"，证明第二次命中了缓存。
-
-#### 示例 2：组合 fetch 缓存和 React cache
-
-```typescript
-// lib/api.ts
-import { cache } from 'react';
-
-// React cache 包裹 fetch
-export const getReport = cache(async () => {
-  const res = await fetch('/api/report', {
-    next: {
-      revalidate: 60,  // fetch 缓存：60秒
-      tags: ['report']
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: '参数验证失败',
+          errors: result.error.errors,
+        },
+        { status: 400 }
+      );
     }
-  });
 
-  return res.json();
-});
-```
+    // 使用验证后的数据
+    const { username, password } = result.data;
 
-**双重缓存：**
-1. **React cache**：同一次请求中，多次调用只执行一次
-2. **fetch cache**：跨请求缓存，60秒内复用
-
----
-
-## 知识点六：缓存安全与最佳实践
-
-### 📚 安全注意事项
-
-#### 🔒 1. 权限验证
-
-**问题**：未验证权限，任何人都能刷新缓存
-
-```typescript
-// ❌ 危险
-export async function POST(request) {
-  revalidateTag('all');  // 任何人都能清空所有缓存
-  return Response.json({ success: true });
-}
-```
-
-**解决方案：**
-
-```typescript
-// ✅ 安全
-export async function POST(request) {
-  const { secret } = await request.json();
-
-  if (secret !== process.env.REVALIDATE_SECRET) {
-    return Response.json({ error: '无权限' }, { status: 401 });
+    // 业务逻辑...
+  } catch (error) {
+    // 错误处理...
   }
-
-  revalidateTag('all');
-  return Response.json({ success: true });
-}
-```
-
-#### 🔐 2. 用户相关数据不要全局缓存
-
-**问题**：不同用户看到相同的缓存数据
-
-```typescript
-// ❌ 错误：全局缓存用户数据
-fetch('/api/user/profile', {
-  next: { revalidate: 300 }
-});
-```
-
-**解决方案：**
-
-```typescript
-// ✅ 正确：用户数据不缓存
-fetch('/api/user/profile', {
-  cache: 'no-store'
-});
-
-// 或者按用户粒度缓存
-fetch(`/api/user/${userId}/profile`, {
-  next: { revalidate: 300, tags: [`user-${userId}`] }
-});
-```
-
-#### 🛡️ 3. 防止缓存穿透
-
-**问题**：恶意请求大量不存在的数据，击穿缓存
-
-```typescript
-// ❌ 危险：不验证参数
-export async function GET(request, { params }) {
-  const data = await fetch(`/api/data/${params.id}`);
-  return Response.json(data);
-}
-```
-
-**解决方案：**
-
-```typescript
-// ✅ 验证参数
-export async function GET(request, { params }) {
-  const id = parseInt(params.id);
-
-  if (isNaN(id) || id <= 0) {
-    return Response.json({ error: '参数错误' }, { status: 400 });
-  }
-
-  const data = await fetch(`/api/data/${id}`);
-  return Response.json(data);
-}
-```
-
-### 💡 最佳实践
-
-#### 1. 缓存粒度选择
-
-```typescript
-// ✅ 好：细粒度缓存
-fetch('/api/articles', { next: { tags: ['articles'] } });
-fetch('/api/users', { next: { tags: ['users'] } });
-
-// ❌ 差：粗粒度缓存
-fetch('/api/all-data', { next: { tags: ['all'] } });
-```
-
-**原因**：细粒度缓存可以精确刷新，不会影响其他数据。
-
-#### 2. 组合使用定时和手动失效
-
-```typescript
-// ✅ 推荐：双重保障
-fetch('/api/data', {
-  next: {
-    revalidate: 300,  // 5分钟自动失效（兜底）
-    tags: ['data']    // 支持手动刷新（实时性）
-  }
-});
-```
-
-#### 3. 监控缓存命中率
-
-```typescript
-// 记录缓存命中情况
-console.log('[Cache] Hit:', cacheHit ? 'YES' : 'NO');
-
-// 上报到监控系统
-reportMetrics({
-  cache_hit_rate: cacheHits / totalRequests
-});
-```
-
-#### 4. 极端场景降级
-
-```typescript
-try {
-  const data = await fetch('/api/data', {
-    next: { revalidate: 60 }
-  });
-  return data.json();
-} catch (error) {
-  // 降级：返回默认数据或缓存数据
-  return getFallbackData();
 }
 ```
 
@@ -1165,476 +1219,372 @@ try {
 
 ### 🎯 项目功能
 
-本项目实现了一个**仪表盘数据报表系统**，完整展示 Next.js 缓存策略的实际应用。
+本项目实现了一个**图片分享应用**，完整展示 Next.js API Routes 的实际应用。
 
 **功能清单：**
-- ✅ Data Cache 数据缓存（120秒自动失效）
-- ✅ 带标签的缓存管理（`tags: ['report']`）
-- ✅ 手动刷新缓存 API
-- ✅ 前端刷新按钮
-- ✅ 骨架屏加载状态
-- ✅ 移动端适配
-- ✅ 错误处理
+- ✅ 用户登录（JWT Token）
+- ✅ 图片上传（FormData）
+- ✅ 图片列表（分页）
+- ✅ 身份验证（Authorization Header）
+- ✅ 文件类型和大小验证
+- ✅ 统一错误处理
+- ✅ RESTful API 设计
 
 ### 📁 项目结构
 
 ```
 next-app/
 ├── app/
-│   ├── cache-dashboard/
-│   │   └── page.tsx              # 仪表盘页面（Server Component）
-│   ├── api/
-│       ├── mock-report/
-│       │   └── route.ts          # 模拟数据API
-│       └── cache-revalidate/
-│           └── route.ts          # 缓存刷新API
+│   ├── image-share/
+│   │   └── page.tsx                # 主页面
+│   └── api/
+│       ├── auth/
+│       │   └── login/
+│       │       └── route.ts        # 登录 API
+│       └── images/
+│           ├── upload/
+│           │   └── route.ts        # 上传 API
+│           └── list/
+│               └── route.ts        # 列表 API
 │
-├── components/cache/
-│   ├── Report.tsx                # 报表展示组件
-│   ├── Skeleton.tsx              # 骨架屏组件
-│   └── CacheControls.tsx         # 缓存控制组件（Client Component）
+├── components/image-share/
+│   ├── LoginForm.tsx               # 登录表单
+│   ├── UploadForm.tsx              # 上传表单
+│   └── ImageList.tsx               # 图片列表
 │
-├── data/cache-mock/
-│   └── report.ts                 # 模拟数据生成
+├── data/image-mock/
+│   └── images.ts                   # 模拟数据
 │
-├── styles/cache/
-│   ├── Dashboard.module.css
-│   ├── Report.module.css
-│   ├── Skeleton.module.css
-│   └── CacheControls.module.css
-│
-└── .env.local                    # 环境变量（缓存密钥）
+└── styles/image-share/
+    ├── LoginForm.module.css
+    ├── UploadForm.module.css
+    ├── ImageList.module.css
+    └── Page.module.css
 ```
 
 ### 📝 核心代码解析
 
-#### 1. 仪表盘页面（使用 Data Cache）
+#### 1. 登录 API
 
-**文件**：`app/cache-dashboard/page.tsx`
+**文件**：[app/api/auth/login/route.ts](app/api/auth/login/route.ts:1-90)
 
-```typescript
-import Report from '@/components/cache/Report';
-import CacheControls from '@/components/cache/CacheControls';
+**知识点：**
+- ✅ POST 请求处理
+- ✅ JSON 请求体解析
+- ✅ 参数验证
+- ✅ Token 生成
+- ✅ 错误处理
 
-// ⭐ 核心：获取数据并缓存
-async function getReportData() {
-  const res = await fetch('http://localhost:3000/api/mock-report', {
-    // Data Cache 配置
-    next: {
-      revalidate: 120,  // 120秒后自动失效
-      tags: ['report']  // 缓存标签
-    },
-    cache: 'force-cache'
-  });
+#### 2. 上传 API
 
-  const result = await res.json();
-  return result.data;
-}
+**文件**：[app/api/images/upload/route.ts](app/api/images/upload/route.ts:1-127)
 
-export default async function CacheDashboard() {
-  // 获取数据（会被缓存）
-  const data = await getReportData();
+**知识点：**
+- ✅ Authorization Header 验证
+- ✅ FormData 解析
+- ✅ 文件类型验证
+- ✅ 文件大小验证
+- ✅ Token 验证
 
-  return (
-    <div>
-      <h1>数据报表</h1>
+#### 3. 列表 API
 
-      {/* 显示数据 */}
-      <Report data={data} />
+**文件**：[app/api/images/list/route.ts](app/api/images/list/route.ts:1-63)
 
-      {/* 缓存控制按钮 */}
-      <CacheControls />
-    </div>
-  );
-}
-```
-
-**关键点：**
-- `revalidate: 120`：2分钟后自动失效
-- `tags: ['report']`：打上标签，便于手动刷新
-- Server Component：默认在服务端执行
-
-#### 2. 缓存刷新 API
-
-**文件**：`app/api/cache-revalidate/route.ts`
-
-```typescript
-import { revalidateTag } from 'next/cache';
-
-export async function POST(request) {
-  const { tag, secret } = await request.json();
-
-  // ⭐ 权限验证
-  if (secret !== process.env.REVALIDATE_SECRET) {
-    return Response.json({ error: '无权限' }, { status: 401 });
-  }
-
-  // ⭐ 刷新缓存
-  revalidateTag(tag);
-
-  return Response.json({ success: true });
-}
-```
-
-**关键点：**
-- 权限验证：防止恶意刷新
-- `revalidateTag`：刷新所有带该标签的缓存
-
-#### 3. 前端刷新按钮
-
-**文件**：`components/cache/CacheControls.tsx`
-
-```typescript
-'use client';
-
-import { useState } from 'react';
-
-export default function CacheControls() {
-  const [loading, setLoading] = useState(false);
-
-  const handleRevalidate = async () => {
-    setLoading(true);
-
-    try {
-      const response = await fetch('/api/cache-revalidate', {
-        method: 'POST',
-        body: JSON.stringify({
-          tag: 'report',
-          secret: 'my-secret-key-123'
-        })
-      });
-
-      if (response.ok) {
-        alert('缓存刷新成功！');
-        window.location.reload();
-      }
-    } catch (error) {
-      alert('刷新失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button onClick={handleRevalidate} disabled={loading}>
-      {loading ? '刷新中...' : '🔄 刷新缓存'}
-    </button>
-  );
-}
-```
-
-**关键点：**
-- `'use client'`：标记为客户端组件（需要交互）
-- 调用刷新API
-- 刷新成功后重新加载页面
-
-#### 4. 模拟数据API
-
-**文件**：`app/api/mock-report/route.ts`
-
-```typescript
-export async function GET() {
-  // 模拟延迟
-  await delay(500);
-
-  // 生成随机数据
-  const data = {
-    timestamp: new Date().toLocaleString('zh-CN'),
-    metrics: [
-      { name: '活跃用户', value: Math.random() * 10000 },
-      // ...
-    ]
-  };
-
-  return Response.json({ success: true, data });
-}
-```
-
-**关键点：**
-- 每次返回不同的数据（用于验证缓存）
-- 带时间戳（证明缓存效果）
+**知识点：**
+- ✅ GET 请求处理
+- ✅ URL 查询参数解析
+- ✅ 分页实现
+- ✅ 数据排序
 
 ### 🧪 完整测试流程
 
-#### 测试 1：验证缓存生效
+#### 测试 1：登录获取 Token
 
-```
-步骤1：访问 http://localhost:3000/cache-dashboard
-  ↓
-步骤2：查看页面顶部"数据生成时间"
-      例如：2024-01-15 14:30:15
-  ↓
-步骤3：按F5多次刷新页面
-  ↓
-步骤4：观察时间戳
-      结果：时间戳不变 ✅
-      原因：缓存生效，未重新获取数据
-```
+```bash
+# 1. 登录
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
 
-#### 测试 2：验证自动失效
-
-```
-步骤1：记录当前时间戳
-  ↓
-步骤2：等待2分钟（revalidate: 120秒）
-  ↓
-步骤3：刷新页面
-  ↓
-步骤4：观察时间戳
-      结果：时间戳更新 ✅
-      原因：缓存已过期，重新获取数据
+# 响应：
+# {
+#   "success": true,
+#   "data": {
+#     "username": "admin",
+#     "token": "eyJ1c2VybmFtZSI6ImFkbWluIi..."
+#   }
+# }
 ```
 
-#### 测试 3：验证手动刷新
+#### 测试 2：上传图片
 
-```
-步骤1：点击"🔄 手动刷新缓存"按钮
-  ↓
-步骤2：等待提示"缓存刷新成功"
-  ↓
-步骤3：页面自动重新加载
-  ↓
-步骤4：观察时间戳
-      结果：时间戳更新 ✅
-      原因：手动清除缓存，获取最新数据
+```bash
+# 2. 上传图片（需要 Token）
+curl -X POST http://localhost:3000/api/images/upload \
+  -H "Authorization: Bearer <your-token>" \
+  -F "file=@/path/to/image.jpg"
+
+# 响应：
+# {
+#   "success": true,
+#   "data": {
+#     "id": "1234567890",
+#     "filename": "image.jpg",
+#     "size": 102400
+#   }
+# }
 ```
 
-#### 测试 4：验证权限保护
+#### 测试 3：获取图片列表
 
-```
-步骤1：修改CacheControls.tsx中的secret
-      改为错误的值，如 'wrong-secret'
-  ↓
-步骤2：点击"刷新缓存"按钮
-  ↓
-步骤3：观察结果
-      结果：提示"刷新失败：无权限" ✅
-      原因：权限验证生效
+```bash
+# 3. 获取列表
+curl "http://localhost:3000/api/images/list?page=1&pageSize=10"
+
+# 响应：
+# {
+#   "success": true,
+#   "data": {
+#     "images": [...],
+#     "pagination": {
+#       "page": 1,
+#       "pageSize": 10,
+#       "total": 2
+#     }
+#   }
+# }
 ```
 
 ---
 
 ## 常见问题
 
-### Q1: 缓存一直不生效，为什么？
+### Q1: API Routes 和 Pages Router 的 API 有什么区别？
 
-**可能原因：**
-
-1. **使用了 POST 请求**
-
+**App Router（新）：**
 ```typescript
-// ❌ POST 请求不会缓存
-fetch('/api/data', { method: 'POST' });
-
-// ✅ 改用 GET
-fetch('/api/data', { method: 'GET' });
+// app/api/users/route.ts
+export async function GET() { ... }
 ```
 
-2. **设置了 cache: 'no-store'**
-
+**Pages Router（旧）：**
 ```typescript
-// ❌ 明确禁用缓存
-fetch('/api/data', { cache: 'no-store' });
-
-// ✅ 使用缓存
-fetch('/api/data', { next: { revalidate: 60 } });
+// pages/api/users.ts
+export default function handler(req, res) { ... }
 ```
 
-3. **开发环境问题**
-
-开发环境（`npm run dev`）缓存行为可能不一致，建议用生产构建测试：
-
-```bash
-npm run build
-npm start
-```
+**建议**：新项目使用 App Router。
 
 ---
 
-### Q2: 如何调试缓存？
+### Q2: 如何处理 CORS？
 
-**方法 1：添加时间戳**
+**方法 1：单个 API 设置**
 
 ```typescript
-async function getData() {
-  const res = await fetch('/api/data', {
-    next: { revalidate: 60 }
-  });
+export async function GET(request: NextRequest) {
+  const response = NextResponse.json({ data: '...' });
 
-  const data = await res.json();
+  // 设置 CORS 头
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
 
-  // 添加获取时间
-  return {
-    ...data,
-    fetchedAt: new Date().toISOString()
-  };
+  return response;
 }
 ```
 
-**方法 2：查看控制台**
+**方法 2：全局中间件**
 
 ```typescript
-export const getServerSideProps = async () => {
-  console.log('[Cache] Fetching data...');
-  const data = await getData();
-  return { props: { data } };
-};
-```
+// middleware.ts
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
 
-**方法 3：使用 Next.js 缓存调试工具**
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
 
-```bash
-# 查看缓存统计
-npx next info
+  return response;
+}
 ```
 
 ---
 
-### Q3: 缓存时间设置多少合适？
+### Q3: 如何连接真实数据库？
 
-| 数据类型 | 推荐时间 | 原因 |
-|----------|----------|------|
-| 静态配置 | 3600s (1小时) | 几乎不变 |
-| 商品列表 | 300s (5分钟) | 更新频繁 |
-| 新闻列表 | 180s (3分钟) | 实时性要求高 |
-| 用户信息 | 0s (不缓存) | 每个用户不同 |
-| 股票价格 | 0s (不缓存) | 必须实时 |
-
----
-
-### Q4: revalidatePath 和 revalidateTag 有什么区别？
-
-| | revalidatePath | revalidateTag |
-|---|----------------|---------------|
-| **刷新范围** | 单个路径 | 一组缓存 |
-| **使用场景** | 更新单个页面 | 批量更新相关页面 |
-| **示例** | 更新文章详情 | 更新所有文章列表 |
-
-**选择建议：**
-- 修改单个资源 → `revalidatePath`
-- 影响多个页面 → `revalidateTag`
-
----
-
-### Q5: 如何避免缓存雪崩？
-
-**问题**：大量缓存同时失效，瞬间压垮服务器。
-
-**解决方案 1：错峰失效**
+**示例：使用 Prisma**
 
 ```typescript
-// ❌ 所有缓存同时失效
-fetch('/api/data1', { next: { revalidate: 300 } });
-fetch('/api/data2', { next: { revalidate: 300 } });
-fetch('/api/data3', { next: { revalidate: 300 } });
+// lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
 
-// ✅ 错峰失效
-fetch('/api/data1', { next: { revalidate: 300 } });
-fetch('/api/data2', { next: { revalidate: 310 } });
-fetch('/api/data3', { next: { revalidate: 320 } });
+const prisma = new PrismaClient();
+export default prisma;
 ```
 
-**解决方案 2：添加随机抖动**
-
 ```typescript
-const baseRevalidate = 300;
-const jitter = Math.floor(Math.random() * 60); // 0-60秒随机
+// app/api/users/route.ts
+import prisma from '@/lib/prisma';
 
-fetch('/api/data', {
-  next: { revalidate: baseRevalidate + jitter }
-});
+export async function GET() {
+  const users = await prisma.user.findMany();
+
+  return NextResponse.json({
+    success: true,
+    data: users,
+  });
+}
 ```
 
 ---
 
-### Q6: 缓存会占用多少磁盘空间？
+### Q4: 文件上传到哪里？
 
-**缓存位置**：`.next/cache`
+**开发环境**：本项目使用模拟数据
 
-**清理缓存：**
+**生产环境建议：**
+1. **云存储**：AWS S3、阿里云 OSS、腾讯云 COS
+2. **CDN**：加速访问
+3. **数据库**：存储文件元信息
 
-```bash
-# 清理所有缓存
-rm -rf .next/cache
+**示例（AWS S3）：**
 
-# 或者重新构建
-npm run build
+```typescript
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+const s3 = new S3Client({ region: 'us-east-1' });
+
+export async function POST(request: NextRequest) {
+  const formData = await request.formData();
+  const file = formData.get('file') as File;
+
+  // 读取文件
+  const buffer = await file.arrayBuffer();
+
+  // 上传到 S3
+  await s3.send(new PutObjectCommand({
+    Bucket: 'my-bucket',
+    Key: file.name,
+    Body: Buffer.from(buffer),
+  }));
+
+  return NextResponse.json({ success: true });
+}
 ```
 
-**监控磁盘使用：**
+---
 
-```bash
-du -sh .next/cache
+### Q5: 如何限制 API 访问频率？
+
+**简单实现：**
+
+```typescript
+// lib/rate-limiter.ts
+const requests = new Map<string, number[]>();
+
+export function rateLimit(ip: string, maxRequests: number = 10, windowMs: number = 60000): boolean {
+  const now = Date.now();
+  const userRequests = requests.get(ip) || [];
+
+  // 清除过期记录
+  const validRequests = userRequests.filter(time => now - time < windowMs);
+
+  if (validRequests.length >= maxRequests) {
+    return false;  // 超过限制
+  }
+
+  validRequests.push(now);
+  requests.set(ip, validRequests);
+
+  return true;  // 允许请求
+}
+```
+
+**使用：**
+
+```typescript
+export async function POST(request: NextRequest) {
+  const ip = request.ip || 'unknown';
+
+  if (!rateLimit(ip, 5, 60000)) {  // 每分钟最多5次
+    return NextResponse.json(
+      { error: '请求过于频繁' },
+      { status: 429 }
+    );
+  }
+
+  // 业务逻辑...
+}
 ```
 
 ---
 
 ## 🎓 学习建议
 
-### 第 1 天：理解缓存基础（2 小时）
+### 第 1 天：理解 API Routes 基础（2 小时）
 
 **上午（1 小时）：**
-1. 阅读"知识点一：Next.js 缓存体系"
-2. 阅读"知识点二：Data Cache"
-3. 理解 revalidate、tags 的作用
+1. 阅读"知识点一：API Routes 基础"
+2. 阅读"知识点二：处理不同 HTTP 方法"
+3. 理解文件系统路由规则
 
 **下午（1 小时）：**
-1. 启动项目，访问缓存演示页面
-2. 完成"实验验证"部分的3个实验
-3. 观察时间戳变化，理解缓存效果
+1. 启动项目，访问 `/image-share`
+2. 使用浏览器开发者工具观察网络请求
+3. 对照代码理解 API 调用流程
 
-### 第 2 天：掌握缓存策略（3 小时）
+### 第 2 天：掌握请求处理（3 小时）
 
 **上午（1.5 小时）：**
-1. 阅读"知识点三：缓存失效策略"
-2. 阅读"知识点四：手动刷新缓存"
-3. 理解 revalidatePath 和 revalidateTag 的区别
+1. 阅读"知识点三：请求体解析"
+2. 阅读"知识点四：文件上传处理"
+3. 理解 JSON 和 FormData 的区别
 
 **下午（1.5 小时）：**
-1. 在 VS Code 中打开项目代码
-2. 对照文档，阅读核心文件：
-   - `app/cache-dashboard/page.tsx`
-   - `app/api/cache-revalidate/route.ts`
-   - `components/cache/CacheControls.tsx`
-3. 加 `console.log` 观察执行顺序
+1. 打开 VS Code，阅读核心文件
+2. 在登录和上传 API 中添加 `console.log`
+3. 观察请求和响应数据
 
 ### 第 3 天：实战练习（3 小时）
 
-**任务 1：修改缓存时间（30分钟）**
+**任务 1：添加注册 API（1 小时）**
 
-将缓存时间从 120 秒改为 60 秒，测试效果。
+创建 `app/api/auth/register/route.ts`：
 
 ```typescript
-// 修改 app/cache-dashboard/page.tsx
-next: { revalidate: 60 }  // 改为60秒
+export async function POST(request: NextRequest) {
+  const { username, password, email } = await request.json();
+
+  // 验证参数
+  // 创建用户
+  // 返回成功
+}
 ```
 
-**任务 2：添加新的缓存标签（1小时）**
+**任务 2：添加图片删除 API（1 小时）**
 
-为不同数据源设置不同标签：
+创建删除功能：
 
 ```typescript
-// 用户数据
-fetch('/api/users', {
-  next: { tags: ['users'] }
-});
-
-// 订单数据
-fetch('/api/orders', {
-  next: { tags: ['orders'] }
-});
+// app/api/images/[id]/route.ts
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  // 验证身份
+  // 删除图片
+  // 返回成功
+}
 ```
 
-**任务 3：实现定向刷新（1.5小时）**
+**任务 3：实现图片搜索（1 小时）**
 
-修改 CacheControls 组件，支持刷新指定标签：
+修改列表 API，支持关键词搜索：
 
 ```typescript
-<select onChange={(e) => setTag(e.target.value)}>
-  <option value="report">报表</option>
-  <option value="users">用户</option>
-  <option value="orders">订单</option>
-</select>
+const keyword = searchParams.get('keyword');
+const filteredImages = images.filter(img =>
+  img.originalName.includes(keyword || '')
+);
 ```
 
 ---
@@ -1644,24 +1594,27 @@ fetch('/api/orders', {
 学完后，检查你是否：
 
 **概念理解：**
-- [ ] 能用自己的话解释什么是 Data Cache
-- [ ] 知道 revalidate 和 tags 的作用
-- [ ] 理解定时失效和手动失效的区别
+- [ ] 能解释什么是 API Routes
+- [ ] 知道不同 HTTP 方法的用途
+- [ ] 理解 JSON 和 FormData 的区别
+- [ ] 理解 JWT Token 的工作原理
 
 **代码理解：**
-- [ ] 知道如何配置 fetch 缓存
-- [ ] 能看懂 revalidateTag 的用法
-- [ ] 理解缓存刷新API的实现
+- [ ] 能看懂登录 API 的实现
+- [ ] 能看懂上传 API 的实现
+- [ ] 能看懂 Token 验证的逻辑
+- [ ] 理解错误处理的方式
 
 **动手能力：**
-- [ ] 能成功运行项目并观察缓存效果
-- [ ] 能修改缓存时间并测试
-- [ ] 能添加新的缓存标签
+- [ ] 能成功运行项目
+- [ ] 能登录并上传图片
+- [ ] 能用 curl 测试 API
+- [ ] 能修改 API 并观察效果
 
 **进阶能力：**
-- [ ] 能自己实现一个缓存页面
-- [ ] 能设计合理的缓存策略
-- [ ] 知道如何调试和监控缓存
+- [ ] 能自己实现新的 API
+- [ ] 能设计 RESTful API
+- [ ] 知道如何调试 API
 
 ---
 
@@ -1669,13 +1622,13 @@ fetch('/api/orders', {
 
 ### 官方文档
 
-- [Next.js 数据缓存](https://nextjs.org/docs/app/building-your-application/caching)
-- [Revalidating Data](https://nextjs.org/docs/app/building-your-application/data-fetching/revalidating)
+- [Next.js API Routes](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
+- [Next.js 请求和响应](https://nextjs.org/docs/app/api-reference/functions/next-request)
 
 ### 本项目文档
 
-- [SSR 教程](../README.md) - 服务端渲染基础
-- [API Routes 教程](../README-API.md) - API 开发
+- [SSR 教程](../README.md)
+- [缓存策略教程](../README-CACHE.md)
 
 ---
 
@@ -1688,6 +1641,6 @@ fetch('/api/orders', {
 3. **没有对照代码看** → 打开 VS Code，边看文档边看代码
 
 **记住：**
-> 缓存策略是性能优化的核心，理解了缓存，就理解了高性能Web应用的精髓！
+> API Routes 是全栈开发的核心，掌握了 API Routes，你就能独立开发完整的 Web 应用！
 
 **加油！你可以的！** 🚀
