@@ -1,24 +1,249 @@
-# Next.js API Routes 完整教程
+# Next.js 零基础到全栈实战教程
 
-> 🎯 **学习目标**：掌握 Next.js API Routes 开发后端接口的完整流程
+> 🎯 **学习目标**：从零掌握 Next.js 全栈开发能力
 >
-> 📚 **教程特点**：先讲解知识点，再给出代码实现
+> 📚 **教程特点**：理论 + 实战，每章配套完整项目
 >
-> ⏱️ **学习时间**：建议 2-3 天，每天 2-3 小时
+> ⏱️ **学习周期**：建议 2-3 周，循序渐进
 
 ---
 
-## 📖 目录
+## 📖 教程目录
+
+### 核心章节
+
+- [第十二章：API Routes - 后端接口开发](#第十二章api-routes)
+- [第十三章：Server Actions - 新一代全栈能力](#第十三章server-actions) 🆕
+- [数据缓存策略](#数据缓存策略)
+
+### 快速导航
 
 - [快速开始](#快速开始)
-- [知识点一：API Routes 基础](#知识点一api-routes-基础)
-- [知识点二：处理不同 HTTP 方法](#知识点二处理不同-http-方法)
-- [知识点三：请求体解析](#知识点三请求体解析)
-- [知识点四：文件上传处理](#知识点四文件上传处理)
-- [知识点五：身份验证与授权](#知识点五身份验证与授权)
-- [知识点六：错误处理与响应规范](#知识点六错误处理与响应规范)
-- [完整项目实战](#完整项目实战)
+- [项目结构](#项目结构)
+- [学习路线](#学习路线)
 - [常见问题](#常见问题)
+
+---
+
+## 🚀 快速开始
+
+### 安装依赖
+
+```bash
+npm install
+```
+
+### 启动开发服务器
+
+```bash
+npm run dev
+```
+
+### 访问项目
+
+打开浏览器访问：http://localhost:3000
+
+---
+
+## 第十三章：Server Actions
+
+### 📘 章节概述
+
+Server Actions 是 Next.js 13+ 引入的革命性全栈能力，允许开发者直接在 React 组件中声明服务端函数，实现"前端即后端"的开发体验。
+
+### 🎯 学习目标
+
+- 理解 Server Actions 的核心概念和优势
+- 掌握表单无刷新提交和数据变更
+- 学会实现乐观 UI 和错误处理
+- 掌握复杂表单处理和文件上传
+- 理解与 RSC 的深度集成
+
+### 📚 核心知识点
+
+#### 1. Server Actions 基础
+
+**与 API Routes 的对比：**
+
+| 特性 | API Routes | Server Actions |
+|------|-----------|----------------|
+| 代码分布 | 前后端分离 | 组件内声明服务端逻辑 |
+| 调用方式 | fetch/AJAX | 直接调用/表单 action |
+| 适用场景 | 复杂接口、第三方集成 | 表单、数据变更、轻量接口 |
+| 错误处理 | 手动 try/catch | 自动捕获并传递 |
+
+**核心优势：**
+- 彻底消除传统 API Route 冗余代码
+- 支持表单无刷新提交
+- 与 RSC 深度集成，自动刷新
+- 自动 CSRF 防护、Session 透传
+
+#### 2. 声明与调用
+
+```typescript
+// 声明 Server Action
+'use server';
+
+export async function addTodo(formData: FormData) {
+  const title = formData.get('title');
+  await db.todo.create({ data: { title } });
+  revalidatePath('/todos');
+}
+
+// 表单调用
+<form action={addTodo}>
+  <input name="title" required />
+  <button type="submit">添加</button>
+</form>
+
+// 事件驱动调用
+<button onClick={() => deleteTodo(id)}>删除</button>
+```
+
+#### 3. 乐观 UI 更新
+
+```tsx
+'use client';
+
+export function ToggleButton({ id, completed }) {
+  const [optimisticCompleted, setOptimisticCompleted] = useState(completed);
+  const [isPending, startTransition] = useTransition();
+
+  const handleToggle = () => {
+    setOptimisticCompleted(!optimisticCompleted); // 立即更新 UI
+
+    startTransition(async () => {
+      try {
+        await toggleTodo(id);
+      } catch (e) {
+        setOptimisticCompleted(completed); // 失败时回滚
+      }
+    });
+  };
+
+  return <button onClick={handleToggle}>...</button>;
+}
+```
+
+#### 4. 数据刷新策略
+
+```typescript
+import { revalidatePath, revalidateTag } from 'next/cache';
+
+// 刷新特定路径
+revalidatePath('/todos');
+
+// 刷新特定标签
+revalidateTag('todos');
+```
+
+### 💻 实战项目
+
+#### 项目一：待办事项管理系统
+
+**访问路径：** `/13-server-actions/todo`
+
+**功能特性：**
+- 添加、删除、切换完成状态
+- 乐观 UI 更新
+- 自动数据刷新
+- 权限校验
+- 错误处理
+
+**技术亮点：**
+- 表单无刷新提交
+- `useTransition` 实现乐观 UI
+- `revalidatePath` 自动刷新
+- 完善的错误边界
+
+**核心代码：**
+
+```typescript
+// actions.ts
+'use server';
+
+export async function addTodo(formData: FormData) {
+  const session = await getSession();
+  if (!session) throw new Error('未登录');
+
+  const title = formData.get('title') as string;
+  if (!title.trim()) throw new Error('标题不能为空');
+
+  await db.todo.create({ data: { title, userId: session.user.id } });
+  revalidatePath('/13-server-actions/todo');
+}
+```
+
+#### 项目二：审批流系统
+
+**访问路径：** `/13-server-actions/approval`
+
+**功能特性：**
+- 动态表单字段
+- 嵌套数据处理
+- 审批状态管理(待审批/通过/驳回)
+- 撤回功能
+- 业务逻辑校验
+
+**技术亮点：**
+- 复杂表单数据解析
+- FormData 嵌套字段处理
+- 企业级业务场景
+- 状态流转管理
+
+#### 项目三：文件上传系统
+
+**访问路径：** `/13-server-actions/upload`
+
+**功能特性：**
+- 文件上传与预览
+- 文件大小和类型校验
+- 图片优化展示
+- 文件管理(列表、删除)
+
+**技术亮点：**
+- FormData 文件处理
+- 客户端实时预览
+- Next.js Image 组件优化
+- 响应式网格布局
+
+### 📖 详细文档
+
+查看完整文档：[docs/13-server-actions/README.md](docs/13-server-actions/README.md)
+
+内容包括：
+- 理论基础详解
+- 核心概念深入
+- 完整代码示例
+- 最佳实践指南
+- 常见问题解答
+- 企业级场景应用
+
+### 🎓 学习建议
+
+1. **理解概念**：先理解 Server Actions 与 API Routes 的区别
+2. **动手实践**：运行三个实战项目，体验不同场景
+3. **阅读代码**：仔细阅读 `actions.ts` 中的服务端逻辑
+4. **对比学习**：对比 API Routes 的实现方式
+5. **扩展练习**：尝试添加新功能，如批量操作、权限管理等
+
+---
+
+## 第十二章：API Routes
+
+### 📘 章节概述
+
+API Routes 是 Next.js 提供的后端 API 开发功能，让你可以在同一个项目中同时开发前端和后端。
+
+### 📖 目录
+
+- [API Routes 基础](#知识点一api-routes-基础)
+- [处理不同 HTTP 方法](#知识点二处理不同-http-方法)
+- [请求体解析](#知识点三请求体解析)
+- [文件上传处理](#知识点四文件上传处理)
+- [身份验证与授权](#知识点五身份验证与授权)
+- [错误处理与响应规范](#知识点六错误处理与响应规范)
+- [完整项目实战](#完整项目实战)
 
 ---
 
