@@ -13,7 +13,8 @@
 ### 核心章节
 
 - [第十二章：API Routes - 后端接口开发](#第十二章api-routes)
-- [第十三章：Server Actions - 新一代全栈能力](#第十三章server-actions) 🆕
+- [第十三章：Server Actions - 新一代全栈能力](#第十三章server-actions)
+- [第十四章：NextAuth.js - 身份认证与授权](#第十四章nextauthjs) 🆕
 - [数据缓存策略](#数据缓存策略)
 
 ### 快速导航
@@ -1656,6 +1657,707 @@ Server Actions 是 Next.js 全栈开发的重要里程碑：
 4. 探索更多企业级场景
 
 **记住：** Server Actions 适合轻量级数据变更和表单提交，复杂接口仍然建议使用 API Routes。两者配合使用，才能发挥最大价值！
+
+Happy Coding! 🚀
+
+---
+
+## 第十四章：NextAuth.js
+
+### 📘 章节概述
+
+NextAuth.js 是 Next.js 生态中最流行的身份认证解决方案，提供完整的认证与授权功能，支持多种登录方式、权限控制、多因子认证等企业级特性。
+
+### 🎯 学习目标
+
+- ✅ 掌握 NextAuth.js 的核心概念和配置
+- ✅ 实现多种登录方式（OAuth、账号密码、邮箱验证码）
+- ✅ 掌握 Session 管理和权限控制（RBAC）
+- ✅ 实现邮箱验证码和多因子认证
+- ✅ 掌握审计日志和安全最佳实践
+
+### 📚 核心功能
+
+#### 1. 多种认证方式
+
+**支持的登录方式：**
+- 🔐 OAuth 登录（GitHub、Google、微信等）
+- 📧 邮箱验证码登录（无密码登录）
+- 🔑 账号密码登录（传统方式）
+- 📱 多因子认证（MFA）
+
+#### 2. Session 管理
+
+**两种策略：**
+- **JWT Strategy**（推荐）：无状态、易扩展、无需数据库
+- **Database Strategy**：可即时撤销、支持并发登录管理
+
+**核心特性：**
+- ✅ 自动 Session 刷新
+- ✅ Token 过期管理
+- ✅ 多端同步登录状态
+- ✅ 安全的 Cookie 存储
+
+#### 3. 权限控制（RBAC）
+
+**三层权限控制：**
+
+```typescript
+// 页面级权限
+export default async function AdminPage() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== 'admin') {
+    redirect('/auth/signin');
+  }
+  // 管理员页面内容
+}
+
+// API 级权限
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: '未认证' }, { status: 401 });
+  }
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: '无权限' }, { status: 403 });
+  }
+  // 管理员 API 逻辑
+}
+
+// 组件级权限
+'use client';
+export default function UserNav() {
+  const { data: session } = useSession();
+  return (
+    <div>
+      {session?.user.role === 'admin' && (
+        <Link href="/admin">管理后台</Link>
+      )}
+    </div>
+  );
+}
+```
+
+### 💻 项目功能
+
+#### 访问路径
+- 登录页：`/auth/signin`
+- 注册页：`/auth/register`
+- 用户仪表板：`/dashboard`
+- 管理后台：`/admin/auth`
+
+#### 功能清单
+
+**✅ 认证功能：**
+- GitHub OAuth 登录
+- 账号密码登录
+- 邮箱验证码登录
+- 用户注册与激活
+
+**✅ 权限管理：**
+- 角色分级（超级管理员、管理员、普通用户）
+- 页面级权限控制
+- API 级权限控制
+- 组件级权限控制
+
+**✅ 安全功能：**
+- 密码加密（bcrypt）
+- CSRF 防护（自动）
+- Session 加密
+- 审计日志记录
+
+**✅ 用户管理：**
+- 用户信息展示
+- 操作历史记录
+- 用户列表管理
+- 审计日志查看
+
+### 🔍 核心代码解析
+
+#### 1. NextAuth 配置
+
+```typescript
+// lib/auth/config.ts
+import { NextAuthOptions } from 'next-auth';
+import GitHubProvider from 'next-auth/providers/github';
+import CredentialsProvider from 'next-auth/providers/credentials';
+
+export const authOptions: NextAuthOptions = {
+  // 认证提供者
+  providers: [
+    // GitHub OAuth
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID || '',
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+    }),
+
+    // 账号密码登录
+    CredentialsProvider({
+      name: '账号密码',
+      credentials: {
+        email: { label: '邮箱', type: 'email' },
+        password: { label: '密码', type: 'password' },
+      },
+      async authorize(credentials) {
+        // 验证用户凭证
+        const user = await db.user.verifyPassword(
+          credentials.email,
+          credentials.password
+        );
+        if (!user) throw new Error('邮箱或密码错误');
+
+        // 记录登录日志
+        await db.auditLog.create({
+          userId: user.id,
+          action: 'login',
+          details: '用户通过账号密码登录',
+        });
+
+        return user;
+      },
+    }),
+
+    // 邮箱验证码登录
+    CredentialsProvider({
+      id: 'email-code',
+      name: '邮箱验证码',
+      credentials: {
+        email: { label: '邮箱', type: 'email' },
+        code: { label: '验证码', type: 'text' },
+      },
+      async authorize(credentials) {
+        // 验证验证码
+        const isValid = await db.verificationCode.verify(
+          credentials.email,
+          credentials.code,
+          'email-login'
+        );
+        if (!isValid) throw new Error('验证码错误或已过期');
+
+        // 查找或创建用户
+        let user = await db.user.findByEmail(credentials.email);
+        if (!user) {
+          user = await db.user.create({
+            name: credentials.email.split('@')[0],
+            email: credentials.email,
+            role: 'user',
+            emailVerified: true,
+            mfaEnabled: false,
+          });
+        }
+
+        return user;
+      },
+    }),
+  ],
+
+  // Session 配置
+  session: {
+    strategy: 'jwt',
+    maxAge: 60 * 60 * 24 * 7, // 7 天
+  },
+
+  // 回调函数
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.user.id = token.id;
+      session.user.role = token.role;
+      return session;
+    },
+  },
+
+  // 自定义页面
+  pages: {
+    signIn: '/auth/signin',
+    error: '/auth/error',
+  },
+
+  // 安全配置
+  secret: process.env.NEXTAUTH_SECRET,
+};
+```
+
+#### 2. 登录页面
+
+```typescript
+// app/(auth)/signin/page.tsx
+'use client';
+
+import { signIn } from 'next-auth/react';
+import { useState } from 'react';
+
+export default function SignInPage() {
+  const [loginMethod, setLoginMethod] = useState<'credentials' | 'email-code'>('credentials');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+
+  // GitHub 登录
+  const handleGitHubSignIn = () => {
+    signIn('github', { callbackUrl: '/dashboard' });
+  };
+
+  // 发送验证码
+  const handleSendCode = async () => {
+    await fetch('/api/auth/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, type: 'email-login' }),
+    });
+  };
+
+  // 提交登录
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (loginMethod === 'credentials') {
+      // 账号密码登录
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+    } else {
+      // 邮箱验证码登录
+      const result = await signIn('email-code', {
+        email,
+        code,
+        redirect: false,
+      });
+    }
+  };
+
+  return (
+    <div>
+      {/* GitHub 登录按钮 */}
+      <button onClick={handleGitHubSignIn}>
+        使用 GitHub 登录
+      </button>
+
+      {/* 登录方式切换 */}
+      <div>
+        <button onClick={() => setLoginMethod('credentials')}>
+          账号密码
+        </button>
+        <button onClick={() => setLoginMethod('email-code')}>
+          邮箱验证码
+        </button>
+      </div>
+
+      {/* 登录表单 */}
+      <form onSubmit={handleSubmit}>
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="邮箱地址"
+        />
+
+        {loginMethod === 'credentials' ? (
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="密码"
+          />
+        ) : (
+          <>
+            <input
+              type="text"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              placeholder="验证码"
+            />
+            <button type="button" onClick={handleSendCode}>
+              发送验证码
+            </button>
+          </>
+        )}
+
+        <button type="submit">登录</button>
+      </form>
+    </div>
+  );
+}
+```
+
+#### 3. 受保护的页面
+
+```typescript
+// app/dashboard/page.tsx
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { redirect } from 'next/navigation';
+import { db } from '@/lib/auth/db';
+
+export default async function DashboardPage() {
+  // 获取 Session
+  const session = await getServerSession(authOptions);
+
+  // 未登录重定向
+  if (!session) {
+    redirect('/auth/signin?callbackUrl=/dashboard');
+  }
+
+  // 获取用户信息
+  const user = await db.user.findByEmail(session.user.email);
+
+  // 获取操作日志
+  const logs = await db.auditLog.findByUserId(session.user.id, 10);
+
+  return (
+    <div>
+      <h1>用户仪表板</h1>
+      <p>欢迎回来，{session.user.name}</p>
+
+      {/* 用户信息 */}
+      <div>
+        <h3>个人信息</h3>
+        <p>姓名：{user.name}</p>
+        <p>邮箱：{user.email}</p>
+        <p>角色：{user.role}</p>
+        <p>邮箱验证：{user.emailVerified ? '已验证' : '未验证'}</p>
+      </div>
+
+      {/* 最近活动 */}
+      <div>
+        <h3>最近活动</h3>
+        {logs.map(log => (
+          <div key={log.id}>
+            <p>{log.details}</p>
+            <p>{log.timestamp.toLocaleString('zh-CN')}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+#### 4. 管理后台（RBAC）
+
+```typescript
+// app/admin/auth/page.tsx
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { redirect } from 'next/navigation';
+import { db } from '@/lib/auth/db';
+
+export default async function AdminPage() {
+  const session = await getServerSession(authOptions);
+
+  // 未登录或非管理员
+  if (!session) {
+    redirect('/auth/signin?callbackUrl=/admin');
+  }
+  if (session.user.role !== 'admin') {
+    redirect('/dashboard'); // 无权限
+  }
+
+  // 获取所有用户
+  const users = await db.user.findAll();
+
+  // 获取审计日志
+  const logs = await db.auditLog.findAll(50);
+
+  return (
+    <div>
+      <h1>管理后台</h1>
+
+      {/* 统计卡片 */}
+      <div>
+        <div>总用户数：{users.length}</div>
+        <div>管理员数量：{users.filter(u => u.role === 'admin').length}</div>
+        <div>审计日志数：{logs.length}</div>
+      </div>
+
+      {/* 用户列表 */}
+      <table>
+        <thead>
+          <tr>
+            <th>用户</th>
+            <th>角色</th>
+            <th>邮箱验证</th>
+            <th>MFA</th>
+            <th>注册时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(user => (
+            <tr key={user.id}>
+              <td>{user.name}</td>
+              <td>{user.role}</td>
+              <td>{user.emailVerified ? '已验证' : '未验证'}</td>
+              <td>{user.mfaEnabled ? '已启用' : '未启用'}</td>
+              <td>{user.createdAt.toLocaleDateString('zh-CN')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* 审计日志 */}
+      <table>
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>用户</th>
+            <th>操作</th>
+            <th>详情</th>
+          </tr>
+        </thead>
+        <tbody>
+          {logs.map(log => {
+            const user = users.find(u => u.id === log.userId);
+            return (
+              <tr key={log.id}>
+                <td>{log.timestamp.toLocaleString('zh-CN')}</td>
+                <td>{user?.name || '未知用户'}</td>
+                <td>{log.action}</td>
+                <td>{log.details}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+```
+
+### 🧪 测试账号
+
+本项目提供测试账号，方便体验不同权限：
+
+| 账号 | 密码 | 角色 | 说明 |
+|------|------|------|------|
+| admin@example.com | admin123 | 管理员 | 可访问管理后台 |
+| user@example.com | user123 | 普通用户 | 仅能访问仪表板 |
+
+### 📖 详细文档
+
+查看完整文档：[docs/14-nextauth/README.md](docs/14-nextauth/README.md)
+
+内容包括：
+- ✅ 认证与授权基础概念
+- ✅ NextAuth.js 核心原理详解
+- ✅ 多种登录方式实现
+- ✅ Session 管理策略
+- ✅ 权限控制最佳实践
+- ✅ 邮箱验证码与多因子认证
+- ✅ 审计日志与安全防护
+- ✅ 常见问题与解决方案
+
+### 🎓 学习建议
+
+#### 第 1 天：理解认证基础（2-3 小时）
+
+**上午（1.5 小时）：阅读理论**
+1. 阅读"认证与授权基础"部分
+2. 理解 NextAuth.js 的核心概念
+3. 掌握 Session 管理策略
+
+**下午（1.5 小时）：运行项目**
+1. 启动开发服务器：`npm run dev`
+2. 访问登录页：http://localhost:3000/auth/signin
+3. 使用测试账号登录，体验不同权限
+4. 查看浏览器开发者工具的网络请求
+
+#### 第 2 天：阅读代码（3-4 小时）
+
+**上午（2 小时）：认证配置**
+1. 打开 `lib/auth/config.ts`
+2. 理解每个 Provider 的配置
+3. 观察 callbacks 的使用
+4. 阅读 Session 管理代码
+
+**下午（2 小时）：权限控制**
+1. 研究页面级权限实现
+2. 理解 API 级权限校验
+3. 对比不同权限控制方式
+4. 总结 RBAC 使用模式
+
+#### 第 3 天：动手实践（4-5 小时）
+
+**任务 1：添加 Google 登录（1.5 小时）**
+```typescript
+import GoogleProvider from 'next-auth/providers/google';
+
+providers: [
+  // ...
+  GoogleProvider({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  }),
+]
+```
+
+**任务 2：实现密码重置（1.5 小时）**
+```typescript
+// 发送重置邮件
+export async function POST(request: NextRequest) {
+  const { email } = await request.json();
+  const token = generateResetToken(email);
+  await sendPasswordResetEmail(email, token);
+  // ...
+}
+
+// 重置密码
+export async function PUT(request: NextRequest) {
+  const { token, newPassword } = await request.json();
+  const email = verifyResetToken(token);
+  await updatePassword(email, newPassword);
+  // ...
+}
+```
+
+**任务 3：添加用户权限管理（1.5 小时）**
+```typescript
+// 管理员可修改用户角色
+export async function PATCH(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (session?.user.role !== 'admin') {
+    return NextResponse.json({ error: '无权限' }, { status: 403 });
+  }
+
+  const { userId, newRole } = await request.json();
+  await db.user.update(userId, { role: newRole });
+  // ...
+}
+```
+
+### 💡 最佳实践总结
+
+#### 1. 安全第一
+
+```typescript
+// ✅ 好的做法：每次都验证
+const session = await getServerSession(authOptions);
+if (!session) throw new Error('未登录');
+
+// ✅ 验证数据所有权
+const item = await db.item.findUnique({ where: { id } });
+if (item.userId !== session.user.id) {
+  throw new Error('无权操作');
+}
+
+// ✅ 敏感信息脱敏
+const users = await db.user.findAll();
+return users.map(u => ({
+  id: u.id,
+  name: u.name,
+  email: u.email,
+  // 不返回 password 等敏感字段
+}));
+```
+
+#### 2. 环境变量管理
+
+```bash
+# .env.local
+NEXTAUTH_SECRET=your-secret-key-change-in-production
+NEXTAUTH_URL=http://localhost:3000
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# 邮件服务
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-email-password
+```
+
+#### 3. 错误处理
+
+```typescript
+// ✅ 友好的错误提示
+try {
+  await signIn('credentials', { email, password });
+} catch (error) {
+  if (error.message === '邮箱或密码错误') {
+    alert('登录失败：邮箱或密码错误');
+  } else {
+    alert('登录失败，请稍后重试');
+  }
+}
+```
+
+### 🎯 检查清单
+
+学完本章后，检查你是否能：
+
+**概念理解：**
+- [ ] 能解释认证与授权的区别
+- [ ] 理解 NextAuth.js 的工作原理
+- [ ] 掌握 JWT 和 Database Session 的区别
+- [ ] 明白 RBAC 权限模型
+
+**代码能力：**
+- [ ] 能配置 NextAuth.js
+- [ ] 能实现多种登录方式
+- [ ] 能做页面和 API 权限控制
+- [ ] 能实现邮箱验证码登录
+- [ ] 能记录审计日志
+
+**调试能力：**
+- [ ] 知道如何查看 Session 信息
+- [ ] 能使用浏览器开发者工具调试
+- [ ] 理解错误信息并能解决
+
+**最佳实践：**
+- [ ] 所有操作都做权限校验
+- [ ] 使用环境变量管理敏感信息
+- [ ] 实现友好的错误处理
+- [ ] 记录关键操作日志
+- [ ] 代码组织清晰、类型安全
+
+### 🚀 进阶方向
+
+1. **集成真实数据库**（Prisma + PostgreSQL）
+2. **添加 OAuth Provider**（Google、微信、钉钉）
+3. **实现多因子认证**（TOTP、短信验证码）
+4. **添加单点登录**（SSO）
+5. **实现权限细粒度控制**（ABAC）
+6. **集成监控告警**（Sentry、Datadog）
+
+### 📚 额外资源
+
+- [NextAuth.js 官方文档](https://next-auth.js.org/)
+- [OAuth 2.0 规范](https://oauth.net/2/)
+- [JWT 规范](https://jwt.io/)
+- [OWASP 安全指南](https://owasp.org/)
+
+### 🎉 总结
+
+NextAuth.js 为 Next.js 应用提供了完整的认证解决方案：
+
+1. **易用性** - 开箱即用，配置简单
+2. **灵活性** - 支持多种认证方式
+3. **安全性** - 内置多种安全机制
+4. **可扩展性** - 支持自定义扩展
+
+通过本章学习，你已经掌握：
+- ✅ NextAuth.js 的核心概念和用法
+- ✅ 多种登录方式的实现
+- ✅ Session 管理和权限控制
+- ✅ 邮箱验证码和审计日志
+- ✅ 安全最佳实践
+
+**下一步：**
+1. 完成三个练习任务
+2. 尝试集成真实数据库
+3. 添加更多 OAuth Provider
+4. 探索企业级认证场景
+
+**记住：** 安全是第一位的，所有操作都要做权限校验！
 
 Happy Coding! 🚀
 
