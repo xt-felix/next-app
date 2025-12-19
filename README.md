@@ -14,7 +14,8 @@
 
 - [第十二章：API Routes - 后端接口开发](#第十二章api-routes)
 - [第十三章：Server Actions - 新一代全栈能力](#第十三章server-actions)
-- [第十四章：NextAuth.js - 身份认证与授权](#第十四章nextauthjs) 🆕
+- [第十四章：NextAuth.js - 身份认证与授权](#第十四章nextauthjs)
+- [第十五章：复杂表单处理与数据校验](#第十五章复杂表单处理与数据校验) 🆕
 - [数据缓存策略](#数据缓存策略)
 
 ### 快速导航
@@ -2358,6 +2359,322 @@ NextAuth.js 为 Next.js 应用提供了完整的认证解决方案：
 4. 探索企业级认证场景
 
 **记住：** 安全是第一位的，所有操作都要做权限校验！
+
+Happy Coding! 🚀
+
+---
+
+## 第十五章：复杂表单处理与数据校验
+
+### 📘 章节概述
+
+本章深入讲解企业级表单开发，使用 React Hook Form + Zod 实现高性能、类型安全的复杂表单处理方案。
+
+### 🎯 学习目标
+
+- ✅ 掌握 React Hook Form 核心概念和用法
+- ✅ 学会使用 Zod 进行类型安全的数据校验
+- ✅ 实现多步骤表单、动态字段表单
+- ✅ 掌握文件上传和批量导入
+- ✅ 实现自动保存和草稿恢复
+- ✅ 掌握表单性能优化技巧
+
+### 📚 核心技术栈
+
+- **React Hook Form**：高性能表单库，最小化重渲染
+- **Zod**：TypeScript-first 的 Schema 验证库
+- **@hookform/resolvers**：连接 React Hook Form 和 Zod
+
+### 💻 实战项目
+
+#### 项目访问路径
+
+**主导航页：** `/15-complex-forms`
+
+#### 功能清单
+
+| 示例 | 难度 | 访问路径 | 核心知识点 |
+|------|------|---------|-----------|
+| 基础表单 | 入门 | `/15-complex-forms/basic` | useForm、register、Zod 验证 |
+| 多步骤表单 | 中级 | `/15-complex-forms/multi-step` | 分步验证、数据暂存、进度条 |
+| 动态字段 | 中级 | `/15-complex-forms/dynamic` | useFieldArray、数组验证 |
+| 文件上传 | 中级 | `/15-complex-forms/upload` | FileReader、文件验证、预览 |
+| 审批流 | 高级 | `/15-complex-forms/approval` | 企业流程、附件上传 |
+| 批量导入 | 高级 | `/15-complex-forms/batch-import` | Excel解析、批量验证 |
+| 自动保存 | 高级 | `/15-complex-forms/auto-save` | LocalStorage、防抖、草稿恢复 |
+
+### 📝 代码示例
+
+#### 基础表单
+
+```typescript
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+// 1. 定义 Schema
+const FormSchema = z.object({
+  username: z.string().min(3, '用户名至少 3 个字符'),
+  email: z.string().email('邮箱格式错误'),
+  password: z.string().min(8, '密码至少 8 个字符'),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: '两次密码不一致',
+  path: ['confirmPassword'],
+});
+
+type FormData = z.infer<typeof FormSchema>;
+
+// 2. 使用表单
+export default function BasicForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(FormSchema),
+  });
+
+  const onSubmit = async (data: FormData) => {
+    console.log(data);
+    // 提交逻辑
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register('username')} />
+      {errors.username && <p>{errors.username.message}</p>}
+
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? '提交中...' : '提交'}
+      </button>
+    </form>
+  );
+}
+```
+
+#### 动态字段
+
+```typescript
+import { useFieldArray } from 'react-hook-form';
+
+const { fields, append, remove } = useFieldArray({
+  control,
+  name: 'workExperience',
+});
+
+// 添加工作经历
+append({
+  company: '',
+  position: '',
+  startDate: '',
+  endDate: '',
+});
+
+// 渲染列表
+{fields.map((field, index) => (
+  <div key={field.id}>
+    <input {...register(`workExperience.${index}.company`)} />
+    <button onClick={() => remove(index)}>删除</button>
+  </div>
+))}
+```
+
+#### 自动保存
+
+```typescript
+const formData = watch();
+
+// 防抖自动保存
+useEffect(() => {
+  const timer = setTimeout(() => {
+    localStorage.setItem('draft', JSON.stringify(formData));
+    setLastSaved(new Date());
+  }, 2000);
+
+  return () => clearTimeout(timer);
+}, [formData]);
+```
+
+### 🔍 核心知识点
+
+#### React Hook Form
+
+- **useForm**：表单状态管理
+- **register**：注册表单字段
+- **handleSubmit**：处理提交
+- **formState**：获取表单状态（errors、isSubmitting）
+- **useFieldArray**：动态数组字段
+- **watch**：监听字段变化
+- **setValue/reset**：手动设置/重置值
+
+#### Zod 验证
+
+- **基础类型**：string、number、boolean、date
+- **字符串验证**：min、max、email、url、regex
+- **数字验证**：int、min、max、positive
+- **数组验证**：array、min、max
+- **对象验证**：object、extend
+- **联合验证**：refine 跨字段验证
+- **自定义验证**：custom validator
+
+### 📖 详细文档
+
+查看完整文档：[docs/15-complex-forms/README.md](docs/15-complex-forms/README.md)
+
+内容包括：
+- ✅ React Hook Form 完整 API 说明
+- ✅ Zod Schema 高级用法
+- ✅ 7 个实战案例详解
+- ✅ 性能优化技巧
+- ✅ 最佳实践指南
+- ✅ 常见问题与解决方案
+
+### 🎓 学习建议
+
+#### 第 1 天：基础学习（3 小时）
+
+**上午（1.5 小时）：**
+1. 阅读 React Hook Form 文档
+2. 学习 Zod 基础验证
+3. 理解表单工作流程
+
+**下午（1.5 小时）：**
+1. 运行基础表单示例
+2. 修改 Schema 尝试不同验证
+3. 查看浏览器开发者工具
+
+#### 第 2 天：进阶实战（4 小时）
+
+**上午（2 小时）：**
+1. 实现多步骤表单
+2. 学习动态字段用法
+3. 理解文件上传流程
+
+**下午（2 小时）：**
+1. 完成审批流表单
+2. 尝试批量导入功能
+3. 实现自动保存
+
+#### 第 3 天：综合练习（3 小时）
+
+**任务 1：用户注册表单（1 小时）**
+- 多步骤：个人信息 → 账号信息 → 完成
+- 邮箱验证码
+- 密码强度检测
+
+**任务 2：简历编辑器（1 小时）**
+- 动态添加工作经历、教育经历
+- 技能标签输入
+- 自动保存草稿
+
+**任务 3：订单管理表单（1 小时）**
+- 动态添加商品
+- 文件上传（发票、合同）
+- 批量导入订单
+
+### 💡 最佳实践
+
+#### 1. Schema 复用
+
+```typescript
+// lib/forms/schemas.ts
+export const EmailSchema = z.string().email();
+export const PasswordSchema = z.string().min(8);
+
+export const LoginSchema = z.object({
+  email: EmailSchema,
+  password: PasswordSchema,
+});
+```
+
+#### 2. 表单组件封装
+
+```typescript
+<FormField label="用户名" error={errors.username?.message} required>
+  <input {...register('username')} />
+</FormField>
+```
+
+#### 3. 错误处理
+
+```typescript
+const onSubmit = async (data) => {
+  try {
+    await api.submit(data);
+    alert('提交成功');
+  } catch (error) {
+    alert(error.message || '提交失败');
+  }
+};
+```
+
+#### 4. 性能优化
+
+- 使用 `mode: 'onBlur'` 减少验证次数
+- 大型表单使用 `shouldUnregister: true`
+- 防抖/节流处理自动保存
+- 虚拟滚动处理长列表
+
+### 🎯 检查清单
+
+学完本章后，检查你是否能：
+
+**概念理解：**
+- [ ] 理解 React Hook Form 的工作原理
+- [ ] 掌握 Zod Schema 验证语法
+- [ ] 理解受控/非受控组件区别
+- [ ] 明白 useFieldArray 的使用场景
+
+**代码能力：**
+- [ ] 能创建基础表单并验证
+- [ ] 能实现多步骤表单
+- [ ] 能使用 useFieldArray 管理动态字段
+- [ ] 能处理文件上传和预览
+- [ ] 能实现自动保存功能
+
+**调试能力：**
+- [ ] 知道如何查看表单状态
+- [ ] 能排查验证错误
+- [ ] 理解性能问题并优化
+
+### 🚀 进阶方向
+
+1. **集成后端 API**（实际提交数据）
+2. **添加单元测试**（React Testing Library）
+3. **实现复杂联动**（省市区联动）
+4. **集成富文本编辑器**（Tiptap、Slate）
+5. **实现拖拽排序**（react-beautiful-dnd）
+6. **添加国际化**（i18next）
+
+### 📚 额外资源
+
+- [React Hook Form 官方文档](https://react-hook-form.com/)
+- [Zod 官方文档](https://zod.dev/)
+- [表单验证最佳实践](https://web.dev/sign-in-form-best-practices/)
+
+### 🎉 总结
+
+React Hook Form + Zod 是目前最佳的表单解决方案：
+
+1. **高性能** - 最小化重渲染，性能优异
+2. **类型安全** - TypeScript 完美支持
+3. **易用性** - API 简洁，学习曲线平缓
+4. **可扩展** - 支持各种复杂场景
+
+通过本章学习，你已经掌握：
+- ✅ React Hook Form 核心用法
+- ✅ Zod Schema 验证
+- ✅ 多场景实战经验
+- ✅ 性能优化技巧
+- ✅ 最佳实践指南
+
+**下一步：**
+1. 完成所有实战案例
+2. 尝试集成到真实项目
+3. 探索更多高级特性
 
 Happy Coding! 🚀
 
