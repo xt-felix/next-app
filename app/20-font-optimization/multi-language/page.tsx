@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { inter, notoSansSC, notoSansJP } from '@/app/fonts';
 import Spacing from '@/components/common/Spacing';
 import styles from '@/styles/font-optimization/MultiLanguagePage.module.css';
@@ -350,7 +353,4 @@ function MultiLangDemo() {
     </Spacing>
   );
 }
-
-'use client';
-import { useState } from 'react';
 

@@ -35,6 +35,9 @@ export const notoSansJP = Noto_Sans_JP({
 
 // 本地自定义品牌字体示例
 // 注意：实际使用时需要将字体文件放在 public/fonts/ 目录下
+// 由于这是示例项目，暂时注释掉本地字体配置
+// 如需使用，请取消注释并确保字体文件存在
+/*
 export const brandFont = localFont({
   src: [
     {
@@ -52,4 +55,5 @@ export const brandFont = localFont({
   variable: '--font-brand',
   fallback: ['system-ui', '-apple-system', 'sans-serif'],
 });
+*/
 

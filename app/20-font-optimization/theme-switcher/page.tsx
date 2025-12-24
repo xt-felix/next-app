@@ -439,7 +439,7 @@ if ('fonts' in document) {
             </pre>
           </section>
         </Spacing>
-      </Spacing>
+      </div>
     </div>
   );
 }
