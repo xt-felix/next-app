@@ -361,39 +361,190 @@ function UserProfile() {
 
 ### 🎯 实战项目：实时通知中心
 
-#### 需求分析
+#### 📋 项目概述
 
-- ✅ 全局管理消息数据
-- ✅ 支持未读计数
-- ✅ 消息标记为已读
-- ✅ WebSocket 实时推送
-- ✅ 移动端适配
-- ✅ 无障碍支持
-- ✅ 性能优化
+实时通知中心是一个企业级功能模块，展示如何结合 Zustand 状态管理和 WebSocket 实时通信，构建一个完整的实时通知系统。本项目涵盖了从状态管理、实时推送、UI 交互到后端协作的全流程实现。
 
-#### 目录结构
+**项目特点：**
+- 🚀 **实时性**：WebSocket 实时推送，毫秒级响应
+- 📊 **状态管理**：Zustand 全局状态，自动同步
+- 🎨 **用户体验**：未读计数、标记已读、时间格式化
+- 📱 **响应式**：移动端适配，无障碍支持
+- 🔄 **数据同步**：前后端状态同步，多标签页支持
+
+#### 🎯 需求分析
+
+##### 业务场景
+
+1. **用户收到新消息**
+   - 系统推送通知到用户
+   - 通知铃铛显示未读数量
+   - 用户点击查看详情
+
+2. **用户处理通知**
+   - 标记单个通知为已读
+   - 一键标记全部为已读
+   - 删除不需要的通知
+
+3. **实时更新**
+   - 新通知实时推送到前端
+   - 多标签页状态同步
+   - 离线后重新连接自动同步
+
+##### 功能清单
+
+| 功能 | 优先级 | 说明 |
+|------|--------|------|
+| 通知列表展示 | P0 | 显示所有通知，支持滚动 |
+| 未读计数 | P0 | 实时显示未读消息数量 |
+| 标记已读 | P0 | 单个/批量标记为已读 |
+| WebSocket 推送 | P0 | 实时接收新通知 |
+| 删除通知 | P1 | 删除不需要的通知 |
+| 时间格式化 | P1 | 显示相对时间（刚刚、5分钟前） |
+| 通知类型 | P1 | 区分 info、success、warning、error |
+| 历史消息加载 | P2 | 初始化时加载历史消息 |
+| 多标签同步 | P2 | BroadcastChannel 同步状态 |
+| 国际化支持 | P2 | 多语言切换 |
+
+#### 🏗️ 技术架构
 
 ```
-stores/
-  notification.ts          # 通知状态管理
-components/
-  NotificationBell.tsx     # 通知铃铛组件
-  NotificationList.tsx     # 通知列表组件
-hooks/
-  useWebSocket.ts          # WebSocket Hook
-app/
-  16-state-management/
-    notification/
-      page.tsx             # 通知中心页面
+┌─────────────────────────────────────────────────────────┐
+│                   实时通知中心架构                        │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  前端层（React + Next.js）                              │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  NotificationBell (通知铃铛)                  │    │
+│  │  - 显示未读数量                                │    │
+│  │  - 点击展开列表                                │    │
+│  └──────────────────────────────────────────────┘    │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  NotificationList (通知列表)                   │    │
+│  │  - 渲染通知列表                                │    │
+│  │  - 标记已读/删除操作                           │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                         │
+│  状态管理层（Zustand）                                  │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  useNotificationStore                         │    │
+│  │  - list: 通知列表                             │    │
+│  │  - unread: 未读计数                           │    │
+│  │  - add/markRead/remove 等方法                 │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                         │
+│  实时通信层（WebSocket）                                │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  useWebSocket Hook                            │    │
+│  │  - 自动连接/重连                              │    │
+│  │  - 消息解析和分发                             │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                         │
+│  后端层（API + WebSocket Server）                      │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  /api/notifications                          │    │
+│  │  - GET: 获取历史消息                          │    │
+│  │  - POST: 标记已读                            │    │
+│  │  - DELETE: 删除通知                          │    │
+│  └──────────────────────────────────────────────┘    │
+│  ┌──────────────────────────────────────────────┐    │
+│  │  WebSocket Server                            │    │
+│  │  - 推送新通知                                │    │
+│  │  - 连接管理                                  │    │
+│  └──────────────────────────────────────────────┘    │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-#### 核心代码
+#### 📁 目录结构
 
-**通知状态管理：** `stores/notification.ts`
+```
+next-app/
+├── stores/
+│   └── notification.ts              # 通知状态管理 Store
+│
+├── hooks/
+│   └── useWebSocket.ts               # WebSocket Hook（自动重连、消息处理）
+│
+├── components/
+│   └── state-management/
+│       ├── NotificationBell.tsx       # 通知铃铛组件（未读计数、展开/收起）
+│       └── NotificationList.tsx       # 通知列表组件（列表渲染、操作按钮）
+│
+├── app/
+│   └── 16-state-management/
+│       └── notification/
+│           └── page.tsx               # 通知中心页面（整合所有功能）
+│
+└── app/api/                           # 后端 API（可选）
+    └── notifications/
+        ├── route.ts                   # GET: 获取历史消息
+        ├── read/route.ts              # POST: 标记已读
+        └── [id]/route.ts              # DELETE: 删除通知
+```
+
+#### 🔄 数据流说明
+
+**1. 初始化流程：**
+```
+页面加载
+  ↓
+useEffect 执行
+  ↓
+调用 API 获取历史消息
+  ↓
+setList() 更新 Store
+  ↓
+组件自动重渲染显示列表
+```
+
+**2. 实时推送流程：**
+```
+后端推送新通知
+  ↓
+WebSocket 接收消息
+  ↓
+useWebSocket onMessage 回调
+  ↓
+add() 添加到 Store
+  ↓
+未读计数自动更新
+  ↓
+NotificationBell 显示新数量
+```
+
+**3. 标记已读流程：**
+```
+用户点击"已读"按钮
+  ↓
+handleMarkRead() 执行
+  ↓
+markRead() 更新 Store（乐观更新）
+  ↓
+调用 API 同步到后端
+  ↓
+UI 立即更新（已读样式）
+```
+
+#### 💻 完整代码实现
+
+##### 步骤 1：定义通知数据模型
+
+**文件：** `stores/notification.ts`
 
 ```typescript
 import { create } from 'zustand';
 
+/**
+ * 通知数据模型
+ * 
+ * 设计要点：
+ * - id: 唯一标识，用于更新和删除
+ * - content: 通知内容，支持富文本
+ * - read: 已读状态，用于过滤和计数
+ * - timestamp: 时间戳，用于排序和显示
+ * - type: 通知类型，用于样式区分
+ */
 export interface Notification {
   id: string;
   content: string;
@@ -402,19 +553,47 @@ export interface Notification {
   type?: 'info' | 'success' | 'warning' | 'error';
 }
 
+/**
+ * 通知状态接口
+ * 
+ * 状态设计：
+ * - list: 通知列表，按时间倒序排列
+ * - unread: 未读计数，自动计算，避免手动维护
+ */
 interface NotificationState {
   list: Notification[];
   unread: number;
+  
+  // 操作方法
   add: (notification: Notification) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
   remove: (id: string) => void;
   setList: (list: Notification[]) => void;
+  clear: () => void;
 }
 
+/**
+ * Zustand 通知状态管理
+ * 
+ * 核心优势：
+ * 1. 轻量级，无需 Provider
+ * 2. TypeScript 类型安全
+ * 3. 自动计算未读计数，避免状态不一致
+ * 4. 支持在组件外调用（如 WebSocket 回调）
+ */
 export const useNotificationStore = create<NotificationState>((set) => ({
   list: [],
   unread: 0,
+  
+  /**
+   * 添加新通知
+   * 
+   * 实现要点：
+   * - 新通知插入到列表开头（时间倒序）
+   * - 自动计算未读数量
+   * - 支持批量添加（通过 setList）
+   */
   add: (notification) =>
     set((state) => {
       const newList = [notification, ...state.list];
@@ -423,6 +602,15 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         unread: newList.filter((n) => !n.read).length,
       };
     }),
+  
+  /**
+   * 标记单个通知为已读
+   * 
+   * 实现要点：
+   * - 使用 map 更新特定项
+   * - 重新计算未读数量
+   * - 保持列表顺序不变
+   */
   markRead: (id) =>
     set((state) => {
       const list = state.list.map((n) =>
@@ -433,63 +621,822 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         unread: list.filter((n) => !n.read).length,
       };
     }),
-  // ... 其他方法
+  
+  /**
+   * 标记所有通知为已读
+   * 
+   * 实现要点：
+   * - 批量更新所有项
+   * - 未读数量归零
+   */
+  markAllRead: () =>
+    set((state) => ({
+      list: state.list.map((n) => ({ ...n, read: true })),
+      unread: 0,
+    })),
+  
+  /**
+   * 删除通知
+   * 
+   * 实现要点：
+   * - 使用 filter 移除特定项
+   * - 重新计算未读数量
+   */
+  remove: (id) =>
+    set((state) => {
+      const list = state.list.filter((n) => n.id !== id);
+      return {
+        list,
+        unread: list.filter((n) => !n.read).length,
+      };
+    }),
+  
+  /**
+   * 设置通知列表（用于初始化）
+   * 
+   * 使用场景：
+   * - 页面加载时获取历史消息
+   * - 从后端同步数据
+   */
+  setList: (list) =>
+    set({
+      list,
+      unread: list.filter((n) => !n.read).length,
+    }),
+  
+  /**
+   * 清空所有通知
+   * 
+   * 使用场景：
+   * - 用户登出
+   * - 清除缓存
+   */
+  clear: () =>
+    set({
+      list: [],
+      unread: 0,
+    }),
 }));
 ```
 
-**WebSocket Hook：** `hooks/useWebSocket.ts`
+##### 步骤 2：实现 WebSocket Hook
+
+**文件：** `hooks/useWebSocket.ts`
 
 ```typescript
 import { useEffect, useRef } from 'react';
 
+interface UseWebSocketOptions {
+  onMessage?: (data: unknown) => void;
+  onOpen?: () => void;
+  onClose?: () => void;
+  onError?: (error: Event) => void;
+  reconnectInterval?: number;      // 重连间隔（毫秒）
+  reconnectAttempts?: number;       // 最大重连次数
+}
+
+/**
+ * WebSocket Hook
+ * 
+ * 功能特性：
+ * 1. 自动连接和重连
+ * 2. 消息解析和错误处理
+ * 3. 生命周期管理（组件卸载时清理）
+ * 4. 可配置的重连策略
+ * 
+ * 使用示例：
+ * ```typescript
+ * useWebSocket('wss://api/notifications', {
+ *   onMessage: (data) => {
+ *     console.log('收到消息:', data);
+ *   },
+ *   reconnectInterval: 3000,
+ *   reconnectAttempts: 5,
+ * });
+ * ```
+ */
 export function useWebSocket(
   url: string,
-  options: {
-    onMessage?: (data: unknown) => void;
-    reconnectInterval?: number;
-  } = {}
+  options: UseWebSocketOptions = {}
 ) {
-  const { onMessage, reconnectInterval = 3000 } = options;
+  const {
+    onMessage,
+    onOpen,
+    onClose,
+    onError,
+    reconnectInterval = 3000,
+    reconnectAttempts = 5,
+  } = options;
+
+  // 使用 useRef 保存 WebSocket 实例和重连相关状态
+  // 避免在 useEffect 依赖中引起不必要的重连
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectCountRef = useRef(0);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    // 服务端渲染时不执行
+    if (typeof window === 'undefined') {
+      return;
+    }
 
+    /**
+     * 连接函数
+     * 
+     * 实现要点：
+     * - 创建 WebSocket 连接
+     * - 绑定事件处理器
+     * - 实现自动重连逻辑
+     */
     const connect = () => {
-      const ws = new WebSocket(url);
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        onMessage?.(data);
-      };
-      ws.onclose = () => {
-        // 自动重连
-        setTimeout(connect, reconnectInterval);
-      };
-      wsRef.current = ws;
+      try {
+        const ws = new WebSocket(url);
+
+        // 连接成功
+        ws.onopen = () => {
+          console.log('[WebSocket] 连接成功');
+          reconnectCountRef.current = 0; // 重置重连计数
+          onOpen?.();
+        };
+
+        // 接收消息
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            onMessage?.(data);
+          } catch (error) {
+            console.error('[WebSocket] 消息解析失败:', error);
+          }
+        };
+
+        // 连接关闭
+        ws.onclose = () => {
+          console.log('[WebSocket] 连接关闭');
+          onClose?.();
+          
+          // 自动重连逻辑
+          if (reconnectCountRef.current < reconnectAttempts) {
+            reconnectCountRef.current += 1;
+            console.log(`[WebSocket] ${reconnectInterval}ms 后尝试重连 (${reconnectCountRef.current}/${reconnectAttempts})`);
+            
+            reconnectTimerRef.current = setTimeout(() => {
+              connect();
+            }, reconnectInterval);
+          } else {
+            console.error('[WebSocket] 达到最大重连次数，停止重连');
+          }
+        };
+
+        // 连接错误
+        ws.onerror = (error) => {
+          console.error('[WebSocket] 连接错误:', error);
+          onError?.(error);
+        };
+
+        wsRef.current = ws;
+      } catch (error) {
+        console.error('[WebSocket] 连接失败:', error);
+      }
     };
 
+    // 开始连接
     connect();
 
+    // 清理函数：组件卸载时关闭连接
     return () => {
-      wsRef.current?.close();
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
-  }, [url, reconnectInterval, onMessage]);
+  }, [url, reconnectInterval, reconnectAttempts, onMessage, onOpen, onClose, onError]);
 
   return wsRef.current;
 }
 ```
 
-**使用示例：**
+##### 步骤 3：实现通知铃铛组件
+
+**文件：** `components/state-management/NotificationBell.tsx`
 
 ```typescript
-// 在通知中心页面中使用
-useWebSocket('wss://api/notifications', {
-  onMessage: (data) => {
-    // 收到新通知，添加到 Store
-    useNotificationStore.getState().add(data as Notification);
-  },
+'use client';
+
+import { useNotificationStore } from '@/stores/notification';
+import { useState } from 'react';
+import NotificationList from './NotificationList';
+
+/**
+ * 通知铃铛组件
+ * 
+ * 功能：
+ * 1. 显示未读消息数量（红点徽章）
+ * 2. 点击展开/收起通知列表
+ * 3. 响应式设计，支持移动端
+ * 4. 无障碍支持（aria-label）
+ * 
+ * 设计要点：
+ * - 使用相对定位实现下拉菜单
+ * - 使用遮罩层实现点击外部关闭
+ * - 未读数量超过 99 显示 "99+"
+ */
+export default function NotificationBell() {
+  // 订阅未读数量（按需订阅，性能优化）
+  const unread = useNotificationStore((state) => state.unread);
+  
+  // 控制下拉菜单的显示/隐藏
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      {/* 通知铃铛按钮 */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={`通知${unread > 0 ? `，${unread}条未读` : ''}`}
+        className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      >
+        <span className="text-2xl">🔔</span>
+        
+        {/* 未读数量徽章 */}
+        {unread > 0 && (
+          <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+      </button>
+
+      {/* 下拉菜单 */}
+      {isOpen && (
+        <>
+          {/* 遮罩层：点击外部关闭 */}
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          
+          {/* 通知列表容器 */}
+          <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 border rounded-lg shadow-lg z-20">
+            <NotificationList onClose={() => setIsOpen(false)} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+##### 步骤 4：实现通知列表组件
+
+**文件：** `components/state-management/NotificationList.tsx`
+
+```typescript
+'use client';
+
+import { useNotificationStore } from '@/stores/notification';
+import { useI18nStore, t } from '@/stores/i18n';
+
+interface NotificationListProps {
+  onClose?: () => void;
+}
+
+/**
+ * 通知列表组件
+ * 
+ * 功能：
+ * 1. 渲染通知列表
+ * 2. 标记单个/全部为已读
+ * 3. 删除通知
+ * 4. 时间格式化显示
+ * 5. 国际化支持
+ * 
+ * 设计要点：
+ * - 已读和未读通知使用不同样式区分
+ * - 时间显示相对时间（刚刚、5分钟前）
+ * - 支持操作按钮（已读、删除）
+ */
+export default function NotificationList({ onClose }: NotificationListProps) {
+  // 订阅状态和方法
+  const list = useNotificationStore((state) => state.list);
+  const markRead = useNotificationStore((state) => state.markRead);
+  const markAllRead = useNotificationStore((state) => state.markAllRead);
+  const remove = useNotificationStore((state) => state.remove);
+  const lang = useI18nStore((state) => state.lang);
+
+  /**
+   * 标记单个通知为已读
+   * 
+   * 实现要点：
+   * - 乐观更新：立即更新 UI
+   * - 后端同步：调用 API 同步状态
+   * - 错误处理：失败时回滚（可选）
+   */
+  const handleMarkRead = async (id: string) => {
+    // 乐观更新
+    markRead(id);
+    
+    // 同步到后端（实际项目中取消注释）
+    // try {
+    //   await fetch('/api/notifications/read', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ id }),
+    //   });
+    // } catch (error) {
+    //   console.error('标记已读失败:', error);
+    //   // 可选：回滚状态
+    // }
+  };
+
+  /**
+   * 标记所有通知为已读
+   */
+  const handleMarkAllRead = async () => {
+    markAllRead();
+    
+    // 同步到后端
+    // await fetch('/api/notifications/read-all', {
+    //   method: 'POST',
+    // });
+  };
+
+  /**
+   * 时间格式化函数
+   * 
+   * 显示规则：
+   * - < 1分钟：刚刚
+   * - < 1小时：X分钟前
+   * - < 24小时：X小时前
+   * - < 7天：X天前
+   * - >= 7天：显示具体日期
+   */
+  const formatTime = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
+    if (hours < 24) return `${hours}小时前`;
+    if (days < 7) return `${days}天前`;
+    
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  return (
+    <div className="p-4">
+      {/* 头部：标题和全部已读按钮 */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">
+          {t('notification.title', lang)}
+        </h3>
+        {list.length > 0 && (
+          <button
+            onClick={handleMarkAllRead}
+            className="text-sm text-blue-500 hover:text-blue-600"
+          >
+            {t('notification.markAllRead', lang)}
+          </button>
+        )}
+      </div>
+
+      {/* 通知列表 */}
+      {list.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          {t('notification.noNotifications', lang)}
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {list.map((notification) => (
+            <li
+              key={notification.id}
+              className={`p-3 rounded-lg border transition-colors ${
+                notification.read
+                  ? 'bg-gray-50 dark:bg-gray-900 opacity-60'
+                  : 'bg-blue-50 dark:bg-blue-900'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                {/* 通知内容 */}
+                <div className="flex-1">
+                  <p className="text-sm">{notification.content}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatTime(notification.timestamp)}
+                  </p>
+                </div>
+                
+                {/* 操作按钮 */}
+                <div className="flex gap-2 ml-2">
+                  {!notification.read && (
+                    <button
+                      onClick={() => handleMarkRead(notification.id)}
+                      className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      已读
+                    </button>
+                  )}
+                  <button
+                    onClick={() => remove(notification.id)}
+                    className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+##### 步骤 5：整合所有功能
+
+**文件：** `app/16-state-management/notification/page.tsx`
+
+```typescript
+'use client';
+
+import { useEffect } from 'react';
+import { useNotificationStore, Notification } from '@/stores/notification';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import NotificationBell from '@/components/state-management/NotificationBell';
+import Link from 'next/link';
+
+/**
+ * 实时通知中心页面
+ * 
+ * 功能整合：
+ * 1. WebSocket 实时推送新消息
+ * 2. 初始化时加载历史消息
+ * 3. 提供模拟添加通知的功能（用于演示）
+ * 
+ * 数据流：
+ * 初始化 → 加载历史消息 → WebSocket 连接 → 接收新消息 → 更新 UI
+ */
+export default function NotificationPage() {
+  // 获取 Store 方法
+  const addNotification = useNotificationStore((state) => state.add);
+  const setList = useNotificationStore((state) => state.setList);
+
+  /**
+   * WebSocket 连接
+   * 
+   * 实际项目中：
+   * - 替换为真实的 WebSocket URL
+   * - 添加认证 Token
+   * - 处理连接失败的情况
+   */
+  useWebSocket('wss://echo.websocket.org', {
+    onMessage: (data) => {
+      // 实际项目中，这里会收到服务器推送的通知
+      console.log('[WebSocket] 收到消息:', data);
+      
+      // 解析并添加到 Store
+      // const notification = data as Notification;
+      // addNotification(notification);
+    },
+    onOpen: () => {
+      console.log('[WebSocket] 连接已建立');
+    },
+    onClose: () => {
+      console.log('[WebSocket] 连接已关闭');
+    },
+    onError: (error) => {
+      console.error('[WebSocket] 连接错误:', error);
+    },
+  });
+
+  /**
+   * 初始化：加载历史消息
+   * 
+   * 实际项目中：
+   * - 调用 API 获取历史消息
+   * - 处理加载失败的情况
+   * - 显示加载状态
+   */
+  useEffect(() => {
+    // 模拟 API 调用
+    const loadHistory = async () => {
+      try {
+        // 实际项目中：
+        // const response = await fetch('/api/notifications');
+        // const data = await response.json();
+        // setList(data.notifications);
+        
+        // 模拟数据
+        const mockNotifications: Notification[] = [
+          {
+            id: '1',
+            content: '欢迎使用通知中心！',
+            read: false,
+            timestamp: Date.now() - 60000, // 1分钟前
+            type: 'info',
+          },
+          {
+            id: '2',
+            content: '您有一条新消息',
+            read: false,
+            timestamp: Date.now() - 300000, // 5分钟前
+            type: 'success',
+          },
+          {
+            id: '3',
+            content: '系统维护通知',
+            read: true,
+            timestamp: Date.now() - 86400000, // 1天前
+            type: 'warning',
+          },
+        ];
+        
+        setList(mockNotifications);
+      } catch (error) {
+        console.error('加载历史消息失败:', error);
+      }
+    };
+
+    loadHistory();
+  }, [setList]);
+
+  /**
+   * 模拟添加通知（用于演示）
+   * 
+   * 实际项目中：
+   * - 这个功能由 WebSocket 推送触发
+   * - 不需要手动添加
+   */
+  const handleAddNotification = () => {
+    const notification: Notification = {
+      id: Date.now().toString(),
+      content: `新通知 ${new Date().toLocaleTimeString()}`,
+      read: false,
+      timestamp: Date.now(),
+      type: 'info',
+    };
+    addNotification(notification);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <Link 
+        href="/16-state-management" 
+        className="text-blue-500 hover:underline mb-4 inline-block"
+      >
+        ← 返回
+      </Link>
+      
+      <h1 className="text-3xl font-bold mb-8">实时通知中心</h1>
+      
+      <div className="space-y-4">
+        {/* 功能说明 */}
+        <div className="p-6 border rounded-lg bg-gray-50 dark:bg-gray-900">
+          <h2 className="text-xl font-semibold mb-4">功能说明</h2>
+          <ul className="list-disc list-inside space-y-2 text-sm">
+            <li><strong>Zustand 状态管理</strong>：全局管理消息数据，自动计算未读计数</li>
+            <li><strong>WebSocket 实时推送</strong>：接收服务器推送的新消息，毫秒级响应</li>
+            <li><strong>未读计数</strong>：实时显示未读消息数量，支持 99+ 显示</li>
+            <li><strong>标记已读</strong>：支持单个和批量标记为已读，状态同步到后端</li>
+            <li><strong>时间格式化</strong>：智能显示相对时间（刚刚、5分钟前）</li>
+            <li><strong>响应式设计</strong>：完美适配移动端和桌面端</li>
+            <li><strong>国际化支持</strong>：多语言切换，用户体验友好</li>
+          </ul>
+        </div>
+
+        {/* 通知中心操作区 */}
+        <div className="flex items-center justify-between p-6 border rounded-lg">
+          <h3 className="text-lg font-semibold">通知中心</h3>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleAddNotification}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              模拟新通知
+            </button>
+            <NotificationBell />
+          </div>
+        </div>
+
+        {/* 技术实现说明 */}
+        <div className="p-6 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">技术实现</h3>
+          <div className="space-y-2 text-sm">
+            <p><strong>状态管理：</strong>使用 Zustand 管理通知列表和未读计数，支持在组件外调用（如 WebSocket 回调）</p>
+            <p><strong>实时通信：</strong>使用 WebSocket 接收服务器推送，自动重连机制保证连接稳定</p>
+            <p><strong>性能优化：</strong>按需订阅状态，避免不必要的重渲染；使用 useRef 保存 WebSocket 实例</p>
+            <p><strong>用户体验：</strong>乐观更新 UI，后端同步在后台进行；时间格式化提升可读性</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+#### 🔌 与后端 API 协作
+
+##### API 接口设计
+
+**1. 获取历史消息**
+
+```typescript
+// GET /api/notifications
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: '未授权' }, { status: 401 });
+  }
+
+  const notifications = await db.notification.findMany({
+    where: { userId: session.user.id },
+    orderBy: { timestamp: 'desc' },
+    take: 50, // 最多返回 50 条
+  });
+
+  return NextResponse.json({
+    success: true,
+    data: { notifications },
+  });
+}
+```
+
+**2. 标记已读**
+
+```typescript
+// POST /api/notifications/read
+export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: '未授权' }, { status: 401 });
+  }
+
+  const { id } = await request.json();
+
+  await db.notification.update({
+    where: { id, userId: session.user.id },
+    data: { read: true },
+  });
+
+  return NextResponse.json({ success: true });
+}
+```
+
+**3. 删除通知**
+
+```typescript
+// DELETE /api/notifications/[id]
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: '未授权' }, { status: 401 });
+  }
+
+  await db.notification.delete({
+    where: { id: params.id, userId: session.user.id },
+  });
+
+  return NextResponse.json({ success: true });
+}
+```
+
+#### ⚡ 性能优化建议
+
+1. **按需订阅状态**
+   ```typescript
+   // ✅ 好的做法：只订阅需要的状态
+   const unread = useNotificationStore((state) => state.unread);
+   
+   // ❌ 不好的做法：订阅整个 Store
+   const store = useNotificationStore();
+   ```
+
+2. **使用 useRef 保存 WebSocket**
+   ```typescript
+   // ✅ 避免在依赖数组中包含 WebSocket 实例
+   const wsRef = useRef<WebSocket | null>(null);
+   ```
+
+3. **防抖处理批量操作**
+   ```typescript
+   // 标记多个通知为已读时，可以批量请求
+   const markMultipleRead = debounce((ids: string[]) => {
+     fetch('/api/notifications/read-batch', {
+       method: 'POST',
+       body: JSON.stringify({ ids }),
+     });
+   }, 300);
+   ```
+
+4. **虚拟滚动（大量数据时）**
+   ```typescript
+   // 使用 react-window 或 react-virtualized
+   import { FixedSizeList } from 'react-window';
+   ```
+
+#### 🧪 测试建议
+
+1. **单元测试**
+   ```typescript
+   // stores/notification.test.ts
+   import { useNotificationStore } from './notification';
+   
+   test('添加通知后未读计数增加', () => {
+     const store = useNotificationStore.getState();
+     store.add({ id: '1', content: 'test', read: false, timestamp: Date.now() });
+     expect(store.unread).toBe(1);
+   });
+   ```
+
+2. **集成测试**
+   ```typescript
+   // 测试 WebSocket 连接和消息处理
+   test('WebSocket 收到消息后添加到 Store', async () => {
+     // 模拟 WebSocket 消息
+     // 验证 Store 状态更新
+   });
+   ```
+
+#### ❓ 常见问题
+
+**Q1: WebSocket 连接失败怎么办？**
+
+**A:** 实现自动重连机制，并在 UI 上显示连接状态：
+
+```typescript
+const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+
+useWebSocket(url, {
+  onOpen: () => setWsStatus('connected'),
+  onClose: () => setWsStatus('disconnected'),
 });
 ```
+
+**Q2: 如何防止重复添加通知？**
+
+**A:** 在 Store 中添加去重逻辑：
+
+```typescript
+add: (notification) =>
+  set((state) => {
+    // 检查是否已存在
+    if (state.list.some(n => n.id === notification.id)) {
+      return state;
+    }
+    // 添加新通知
+    const newList = [notification, ...state.list];
+    return {
+      list: newList,
+      unread: newList.filter((n) => !n.read).length,
+    };
+  }),
+```
+
+**Q3: 如何实现多标签页同步？**
+
+**A:** 使用 BroadcastChannel API（参考"多标签同步"章节）：
+
+```typescript
+// 在 markRead 时广播消息
+markRead: (id) => {
+  // 更新状态
+  // ...
+  // 广播到其他标签页
+  broadcastMessage('notifications', { type: 'markRead', id });
+},
+```
+
+#### 🚀 扩展功能建议
+
+1. **通知分类**
+   - 按类型筛选（info、success、warning、error）
+   - 按时间筛选（今天、本周、本月）
+
+2. **通知设置**
+   - 免打扰时间段
+   - 通知类型偏好设置
+
+3. **富文本通知**
+   - 支持 Markdown
+   - 支持图片和链接
+
+4. **通知声音**
+   - 播放提示音
+   - 自定义提示音
 
 **访问路径：** `/16-state-management/notification`
 
