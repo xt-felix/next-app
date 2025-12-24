@@ -1,0 +1,13 @@
+{
+  "welcome": "Welcome, {{name}}!",
+  "logout": "Logout",
+  "cart": "Cart ({{count}})",
+  "username": "Username",
+  "login": "Login",
+  "error_required": "Please enter {{field}}",
+  "date_format": "YYYY-MM-DD",
+  "change_language": "Change Language",
+  "home": "Home",
+  "blog": "Blog"
+}
+

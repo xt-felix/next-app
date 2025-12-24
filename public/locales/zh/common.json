@@ -1,0 +1,13 @@
+{
+  "welcome": "欢迎，{{name}}！",
+  "logout": "退出登录",
+  "cart": "购物车({{count}})",
+  "username": "用户名",
+  "login": "登录",
+  "error_required": "请输入{{field}}",
+  "date_format": "YYYY年MM月DD日",
+  "change_language": "切换语言",
+  "home": "首页",
+  "blog": "博客"
+}
+
