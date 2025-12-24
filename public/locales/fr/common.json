@@ -1,0 +1,13 @@
+{
+  "welcome": "Bienvenue, {{name}}!",
+  "logout": "Déconnexion",
+  "cart": "Panier ({{count}})",
+  "username": "Nom d'utilisateur",
+  "login": "Connexion",
+  "error_required": "Veuillez saisir {{field}}",
+  "date_format": "DD/MM/YYYY",
+  "change_language": "Changer de langue",
+  "home": "Accueil",
+  "blog": "Blog"
+}
+
