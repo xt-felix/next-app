@@ -1,0 +1,142 @@
+.container {
+  padding: 40px;
+}
+
+.section {
+  margin-bottom: 40px;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.section h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+.section h3 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+.section p {
+  margin: 12px 0;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.section ul {
+  margin: 12px 0;
+  padding-left: 24px;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+.code {
+  background: #1f2937;
+  color: #f3f4f6;
+  padding: 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre;
+  margin: 16px 0;
+}
+
+.useCase {
+  margin: 24px 0;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.useCase h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
+.example {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f9fafb;
+  border-left: 4px solid #8b5cf6;
+  border-radius: 4px;
+}
+
+.example p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.warning {
+  padding: 16px;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  margin: 12px 0;
+}
+
+.warning strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #92400e;
+}
+
+.warning p {
+  margin: 0;
+  color: #92400e;
+  line-height: 1.6;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  background: white;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+}
+
+.table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #111827;
+}
+
+.table td {
+  color: #4b5563;
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+
+.checklist li {
+  padding: 12px;
+  margin: 8px 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #059669;
+  font-weight: 500;
+}
+
+.checklist li::before {
+  content: '✓ ';
+  margin-right: 8px;
+  color: #059669;
+}

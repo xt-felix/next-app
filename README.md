@@ -1,1006 +1,939 @@
-# 第19章：图像优化 - next/image 与企业级实践
+# 第二十章：字体优化 - next/font 与自定义字体
 
-> 本章节深入讲解 Next.js 图像优化的核心技术，包括 `next/image` 组件的使用、响应式图片、自定义加载器、性能监控等企业级实践。
+> 全面掌握 Next.js 13+ 的字体优化方案，实现极致的加载性能和用户体验
 
 ## 📚 目录
 
-- [为什么需要图像优化](#为什么需要图像优化)
-- [核心知识点](#核心知识点)
-- [项目结构](#项目结构)
+- [核心概念](#核心概念)
 - [快速开始](#快速开始)
+- [示例导航](#示例导航)
 - [详细教程](#详细教程)
-  - [1. 基础用法](#1-基础用法)
-  - [2. 响应式图片](#2-响应式图片)
-  - [3. 商品展示案例](#3-商品展示案例)
-  - [4. 图片画廊](#4-图片画廊)
-  - [5. 自定义加载器](#5-自定义加载器)
-  - [6. 高级技巧](#6-高级技巧)
 - [最佳实践](#最佳实践)
 - [常见问题](#常见问题)
 
 ---
 
-## 为什么需要图像优化？
+## 🎯 核心概念
 
-### 📊 关键数据
+### 为什么需要字体优化？
 
-- **图片占比**：图片通常占网页体积的 **60% 以上**
-- **性能影响**：图片优化可使页面加载速度提升 **50-70%**
-- **用户体验**：加载速度每提升 0.1 秒，转化率提升 **8-10%**
-- **SEO 影响**：页面速度是 Google 搜索排名的重要因素
+字体文件是影响网页性能的重要因素：
 
-### 🎯 优化收益
+- **体积大**：英文字体 50-200KB，中文字体可达数 MB
+- **加载慢**：字体下载会阻塞渲染，影响首屏速度
+- **用户体验差**：可能出现 FOIT（闪烁不可见文本）或 FOUT（闪烁无样式文本）
+- **布局偏移**：字体加载后可能导致 CLS（累积布局偏移）
 
-1. **性能提升**：减少首屏加载时间，提升 LCP（最大内容绘制）
-2. **流量节省**：移动端流量节省 **60-80%**
-3. **用户体验**：懒加载、占位符消除布局跳动
-4. **SEO 优势**：更快的加载速度提升搜索排名
-5. **自动化**：next/image 自动处理格式转换、尺寸生成
+### Next.js 字体优化方案
+
+**传统方式的问题：**
+```css
+/* 传统 @font-face 方式 */
+@font-face {
+  font-family: 'MyFont';
+  src: url('/fonts/font.woff2') format('woff2');
+}
+```
+❌ 需要手动优化  
+❌ 容易出现 FOIT/CLS  
+❌ 难以管理多字体  
+❌ 无自动子集化  
+
+**next/font 的优势：**
+
+✅ 自动优化字体加载  
+✅ 零布局偏移（Zero CLS）  
+✅ 自动字体子集化  
+✅ 内置预加载  
+✅ 支持 Google Fonts 和本地字体  
+✅ 类型安全  
 
 ---
 
-## 核心知识点
+## 🚀 快速开始
 
-### 🚀 next/image 核心特性
+### 1. 配置字体
 
-#### 1. 自动图片优化
+创建 `app/fonts.ts` 文件：
 
-```tsx
-import Image from 'next/image';
+```typescript
+import { Inter, Noto_Sans_SC } from 'next/font/google';
 
-<Image
-  src="/product.jpg"
-  alt="商品图片"
-  width={600}
-  height={400}
-  quality={85}
-/>
+// 配置英文字体
+export const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+// 配置中文字体
+export const notoSansSC = Noto_Sans_SC({
+  subsets: ['chinese-simplified'],
+  weight: ['400', '700'],
+  display: 'swap',
+  variable: '--font-noto-sans-sc',
+});
 ```
 
-**自动处理：**
-- ✅ 自动生成 WebP/AVIF 格式（文件减小 30-50%）
-- ✅ 根据设备生成多种尺寸（适配不同分辨率）
-- ✅ 自动压缩和优化（平衡质量和大小）
+### 2. 在 Layout 中使用
 
-#### 2. 懒加载（Lazy Loading）
+```typescript
+// app/layout.tsx
+import { inter, notoSansSC } from './fonts';
 
-```tsx
-// 默认懒加载（非首屏图片）
-<Image src="/feature.jpg" alt="功能图" width={400} height={300} />
-
-// 禁用懒加载（首屏重要图片）
-<Image 
-  src="/hero-banner.jpg" 
-  alt="首页横幅" 
-  width={1200} 
-  height={400}
-  priority  // 优先加载
-/>
+export default function RootLayout({ children }) {
+  return (
+    <html lang="zh" className={`${inter.variable} ${notoSansSC.variable}`}>
+      <body className={inter.className}>{children}</body>
+    </html>
+  );
+}
 ```
 
-**工作原理：**
-- 图片进入视口附近时才开始加载
-- 首屏重要图片设置 `priority` 优先加载
-- 减少首屏资源，提升加载速度
+### 3. 在组件中使用
 
-#### 3. 响应式图片
+```typescript
+import { notoSansSC } from '@/app/fonts';
 
-```tsx
-<Image
-  src="/banner.jpg"
-  alt="横幅"
-  width={1200}
-  height={400}
-  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 80vw"
-  quality={85}
-/>
+export default function Page() {
+  return (
+    <div className={notoSansSC.className}>
+      这段文字使用思源黑体
+    </div>
+  );
+}
 ```
 
-**sizes 属性说明：**
-- `(max-width: 640px) 100vw`：移动端占据 100% 视口宽度
-- `(max-width: 1024px) 90vw`：平板占据 90% 视口宽度
-- `80vw`：桌面端占据 80% 视口宽度
+---
 
-浏览器根据 `sizes` 和设备分辨率（DPR）自动选择最合适的图片尺寸。
+## 📖 示例导航
 
-#### 4. 占位符（Placeholder）
+本章包含 5 个完整示例，从基础到高级逐步深入：
 
-```tsx
-// 模糊占位符
-<Image
-  src="/photo.jpg"
-  alt="照片"
-  width={800}
-  height={600}
-  placeholder="blur"
-  blurDataURL="data:image/jpeg;base64,..."
-/>
+### 1️⃣ [基础字体加载](app/20-font-optimization/basic)
+**学习内容：**
+- next/font 基本使用
+- 字体配置参数详解
+- className 和 variable 的区别
+- 字体显示策略（display）
+
+**关键代码：**
+```typescript
+const inter = Inter({
+  subsets: ['latin'],       // 字体子集
+  weight: ['400', '700'],   // 字体粗细
+  display: 'swap',          // 显示策略
+  variable: '--font-inter', // CSS 变量
+});
 ```
 
-**占位符类型：**
-- `blur`：模糊占位图（使用 base64 或低分辨率图）
-- `empty`：空白占位（可配合 CSS 背景色）
+**适用场景：** 新项目接入 next/font，基础字体配置
+
+---
+
+### 2️⃣ [Google Fonts 使用](app/20-font-optimization/google-fonts)
+**学习内容：**
+- 加载多个 Google Fonts
+- 多字重配置
+- 中英文字体组合
+- 字体效果对比展示
+
+**关键代码：**
+```typescript
+// 英文字体
+const inter = Inter({ subsets: ['latin'] });
+const roboto = Roboto({ subsets: ['latin'] });
+
+// 中文字体
+const notoSansSC = Noto_Sans_SC({ 
+  subsets: ['chinese-simplified'] 
+});
+```
+
+**亮点：**
+- ✨ 展示 Inter、Roboto、Noto Sans SC 三种字体效果
+- ✨ 多语言场景下的字体选择策略
+- ✨ 性能对比：传统方式 vs next/font
+
+**适用场景：** 多语言网站、需要多种字体风格的项目
+
+---
+
+### 3️⃣ [本地自定义字体](app/20-font-optimization/local-fonts)
+**学习内容：**
+- 使用 localFont 加载本地字体
+- 多字重、多样式配置
+- 字体文件格式选择（woff2）
+- 字体授权与合规
+- 字体子集化技术
+
+**目录结构：**
+```
+public/
+  fonts/
+    Brand-Regular.woff2
+    Brand-Bold.woff2
+    Brand-Italic.woff2
+```
+
+**关键代码：**
+```typescript
+import localFont from 'next/font/local';
+
+export const brandFont = localFont({
+  src: [
+    {
+      path: '../public/fonts/Brand-Regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Brand-Bold.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
+  display: 'swap',
+  variable: '--font-brand',
+  fallback: ['system-ui', 'sans-serif'],
+});
+```
+
+**实际应用场景：**
+- 🎨 企业品牌字体统一
+- 🎨 特殊设计字体（手写体、艺术字）
+- 🎨 自定义图标字体
+
+**字体优化工具：**
+- **fonttools**：字体子集化、格式转换
+- **glyphhanger**：自动分析网页用到的字符
+- **transfonter**：在线字体格式转换
+
+**适用场景：** 企业官网、品牌推广页、需要特殊设计字体的项目
+
+---
+
+### 4️⃣ [多语言字体支持](app/20-font-optimization/multi-language)
+**学习内容：**
+- 多语言字体配置策略
+- 字体子集化原理
+- 动态字体切换
+- 不同语言的字体大小对比
+- fallback 字体配置
+
+**支持语言：**
+- 🇺🇸 英文（Inter）
+- 🇨🇳 简体中文（Noto Sans SC）
+- 🇯🇵 日文（Noto Sans JP）
+
+**关键代码：**
+```typescript
+// 根据语言动态选择字体
+function getLocaleFont(locale: string) {
+  switch (locale) {
+    case 'zh':
+      return notoSansSC.className;
+    case 'ja':
+      return notoSansJP.className;
+    default:
+      return inter.className;
+  }
+}
+```
+
+**字体子集大小对比：**
+| 语言 | 字体 | 子集 | 大约体积 |
+|------|------|------|----------|
+| 英文 | Inter | latin | ~100 KB |
+| 简体中文 | Noto Sans SC | chinese-simplified | ~1.5 MB |
+| 日文 | Noto Sans JP | japanese | ~1.8 MB |
+
+**优化策略：**
+1. 按需加载语言字体（懒加载）
+2. 优先加载主要语言
+3. CDN 分发加速
+4. 配置合适的 fallback
+
+**fallback 配置建议：**
+```css
+/* 中文 fallback 链 */
+font-family: 
+  'Noto Sans SC',       /* Google 字体 */
+  'PingFang SC',        /* macOS/iOS */
+  'Microsoft YaHei',    /* Windows */
+  'Hiragino Sans GB',   /* macOS 旧版 */
+  sans-serif;
+```
+
+**适用场景：** 国际化项目、多语言网站、跨地区应用
+
+---
+
+### 5️⃣ [动态字体切换与主题](app/20-font-optimization/theme-switcher)
+**学习内容：**
+- React State 控制字体切换
+- CSS 变量实现字体主题
+- 暗黑模式字体优化
+- 用户偏好持久化
+- 字体加载状态管理
+
+**交互式演示：**
+- 🎮 实时切换字体主题（Inter / Roboto / 思源黑体）
+- 🎮 切换颜色模式（浅色 / 暗黑）
+- 🎮 查看不同组合的效果
+
+**关键代码：**
+
+**1. 使用 State 切换：**
+```typescript
+const [fontTheme, setFontTheme] = useState('inter');
+
+const fontClasses = {
+  inter: inter.className,
+  roboto: roboto.className,
+  noto: notoSansSC.className,
+};
+
+<div className={fontClasses[fontTheme]}>
+  内容
+</div>
+```
+
+**2. 使用 CSS 变量：**
+```css
+:root {
+  --font-primary: var(--font-inter);
+}
+
+.theme-modern { --font-primary: var(--font-inter); }
+.theme-classic { --font-primary: var(--font-roboto); }
+
+body {
+  font-family: var(--font-primary), sans-serif;
+}
+```
+
+**3. 持久化用户偏好：**
+```typescript
+// 保存到 localStorage
+const handleFontChange = (theme: string) => {
+  setFontTheme(theme);
+  localStorage.setItem('fontTheme', theme);
+};
+
+// 读取用户偏好
+useEffect(() => {
+  const saved = localStorage.getItem('fontTheme');
+  if (saved) setFontTheme(saved);
+}, []);
+```
+
+**暗黑模式优化：**
+```css
+.dark body {
+  /* 暗黑模式下增加字重，提升可读性 */
+  font-weight: 450;
+  letter-spacing: 0.01em;
+}
+```
+
+**高级技巧：**
+- 根据内容语言自动切换字体
+- 响应式字体大小（clamp）
+- 字体加载状态显示
+- 性能监控（Font Loading API）
+
+**适用场景：** 需要主题切换的应用、个性化设置、多品牌系统
+
+---
+
+## 💡 最佳实践
+
+### 1. 字体选择原则
+
+✅ **DO - 推荐做法：**
+- 使用 `next/font` 管理所有字体
+- 优先使用 Google Fonts（免费、优质）
+- 英文字体选择 Inter、Roboto 等现代字体
+- 中文字体选择思源黑体系列
+- 设置 `display: 'swap'` 避免 FOIT
+
+❌ **DON'T - 避免做法：**
+- 直接使用 `@font-face`（失去自动优化）
+- 加载过多字体（影响性能）
+- 使用未授权的商业字体
+- 忽略字体子集化
+
+### 2. 性能优化策略
+
+**字体子集化：**
+```typescript
+// 只加载拉丁字符
+const inter = Inter({ subsets: ['latin'] });
+
+// 只加载简体中文字符
+const notoSansSC = Noto_Sans_SC({ 
+  subsets: ['chinese-simplified'] 
+});
+```
+
+**字重选择：**
+```typescript
+// ❌ 加载所有字重（影响性能）
+weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900']
+
+// ✅ 只加载需要的字重
+weight: ['400', '700']  // 常规 + 粗体
+
+// ✅ 或使用可变字体
+weight: 'variable'
+```
+
+**预加载关键字体：**
+```typescript
+// app/layout.tsx
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <head>
+        <link 
+          rel="preconnect" 
+          href="https://fonts.googleapis.com" 
+        />
+        <link 
+          rel="preconnect" 
+          href="https://fonts.gstatic.com" 
+          crossOrigin="anonymous" 
+        />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+### 3. 字体回退配置
+
+**多级 fallback：**
+```typescript
+export const brandFont = localFont({
+  src: './fonts/Brand.woff2',
+  fallback: [
+    'system-ui',           // 系统默认
+    '-apple-system',       // macOS/iOS
+    'BlinkMacSystemFont',  // macOS Chrome
+    'Segoe UI',            // Windows
+    'Roboto',              // Android
+    'sans-serif',          // 最终备用
+  ],
+});
+```
+
+### 4. 代码组织
+
+**推荐的目录结构：**
+```
+app/
+  fonts.ts              ← 集中管理所有字体
+  layout.tsx            ← 全局字体配置
+  20-font-optimization/
+    basic/
+      page.tsx
+    google-fonts/
+      page.tsx
+    local-fonts/
+      page.tsx
+    multi-language/
+      page.tsx
+    theme-switcher/
+      page.tsx
+public/
+  fonts/                ← 本地字体文件
+    Brand-Regular.woff2
+    Brand-Bold.woff2
+styles/
+  font-optimization/    ← 字体相关样式
+    BasicPage.module.css
+    ...
+```
+
+### 5. 字体授权与合规
+
+**Google Fonts：**
+- ✅ 完全免费，可用于商业项目
+- ✅ 开源授权（SIL Open Font License）
+- ✅ 无需额外授权费用
+
+**商业字体：**
+- ⚠️ 需购买授权（如方正、汉仪等）
+- ⚠️ 注意授权范围（网页端、app 端等）
+- ⚠️ 保留授权证明文件
+
+**字体子集化合规：**
+- ✅ 多数字体授权允许子集化
+- ⚠️ 部分字体禁止修改，需仔细阅读授权条款
+
+### 6. 测试与监控
+
+**性能测试工具：**
+- **Lighthouse**：检查字体加载性能和 CLS
+- **WebPageTest**：详细分析字体加载时间线
+- **Chrome DevTools**：Network 面板查看字体加载
+
+**关键指标：**
+- **FCP (First Contentful Paint)**：首次内容绘制
+- **LCP (Largest Contentful Paint)**：最大内容绘制
+- **CLS (Cumulative Layout Shift)**：累积布局偏移
+- **字体加载时间**：应控制在 1 秒内
+
+---
+
+## 🔧 技术细节
+
+### 字体加载流程
+
+```mermaid
+graph LR
+    A[页面请求] --> B[Next.js 服务器]
+    B --> C[next/font 生成字体 CSS]
+    C --> D[浏览器解析 CSS]
+    D --> E[下载字体文件]
+    E --> F[应用字体样式]
+    F --> G[渲染页面]
+    
+    style C fill:#10b981
+    style F fill:#10b981
+```
+
+### display 参数详解
+
+| 值 | 行为 | 适用场景 |
+|----|------|---------|
+| `swap` | 立即显示 fallback，字体加载后切换 | **推荐**，适合大多数场景 |
+| `optional` | 字体加载超时则放弃 | 弱网环境 |
+| `block` | 阻塞渲染直到字体加载 | 品牌要求极高的场景 |
+| `fallback` | 短暂阻塞后显示 fallback | 平衡性能和品牌 |
+| `auto` | 浏览器默认行为 | 不推荐 |
+
+**推荐配置：**
+```typescript
+{
+  display: 'swap',  // 99% 的场景都应该用 swap
+}
+```
+
+### 字体子集化原理
+
+**完整字体 vs 子集字体：**
+
+```
+完整 Noto Sans SC：
+- 包含所有汉字（20000+ 字符）
+- 文件大小：10-15 MB
+- 加载时间：3-10 秒（3G 网络）
+
+子集化后：
+- 只包含常用汉字（3500 字符）
+- 文件大小：500 KB - 1.5 MB
+- 加载时间：<1 秒
+```
+
+**手动子集化工具：**
+
+```bash
+# 安装 fonttools
+pip install fonttools brotli
+
+# 提取常用汉字
+pyftsubset Font.ttf \
+  --text-file=common-3500.txt \
+  --output-file=Font-subset.woff2 \
+  --flavor=woff2 \
+  --layout-features="*"
+
+# 转换格式
+fonttools ttLib.woff2 compress Font.ttf
+```
+
+---
+
+## ❓ 常见问题
+
+### Q1: 为什么字体加载很慢？
+
+**可能原因：**
+1. 字体文件过大（未子集化）
+2. 网络问题（CDN 配置不当）
+3. 加载了过多字体或字重
+4. 未配置预连接
+
+**解决方案：**
+```typescript
+// 1. 使用子集化
+const font = Noto_Sans_SC({ 
+  subsets: ['chinese-simplified']  // 而不是完整字体
+});
+
+// 2. 只加载需要的字重
+weight: ['400', '700']  // 而不是全部字重
+
+// 3. 预连接 CDN
+<link rel="preconnect" href="https://fonts.gstatic.com" />
+```
+
+---
+
+### Q2: 出现字体闪烁（FOIT/FOUT）怎么办？
+
+**FOIT（Flash of Invisible Text）：**
+- 现象：文字先不可见，字体加载后才显示
+- 原因：`display: 'block'`
+
+**FOUT（Flash of Unstyled Text）：**
+- 现象：先显示 fallback 字体，加载后切换
+- 原因：`display: 'swap'`
+
+**推荐方案：**
+```typescript
+{
+  display: 'swap',  // 使用 swap，确保文字立即可见
+  fallback: ['system-ui', 'sans-serif'],  // 配置相似的 fallback
+}
+```
+
+---
+
+### Q3: 如何处理布局偏移（CLS）？
+
+**原因：**
+字体加载后，文字大小、行高变化导致布局跳动。
+
+**解决方案：**
+
+使用 `next/font` 自动处理（推荐）：
+```typescript
+// next/font 会自动生成优化的 CSS
+const inter = Inter({ subsets: ['latin'] });
+// 应用 inter.className 后，自动避免 CLS
+```
+
+手动调整 fallback 字体：
+```css
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/inter.woff2');
+  /* 调整 fallback 字体的 size-adjust */
+  size-adjust: 100%;
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+```
+
+---
+
+### Q4: 中文字体体积太大怎么办？
+
+**问题：**
+完整中文字体 10MB+，严重影响性能。
+
+**解决方案：**
+
+**1. 使用 Google Fonts 子集（推荐）：**
+```typescript
+const notoSansSC = Noto_Sans_SC({
+  subsets: ['chinese-simplified'],  // 自动子集化到 1.5MB
+});
+```
+
+**2. 手动子集化：**
+```bash
+# 只保留常用字
+pyftsubset font.ttf \
+  --text="常用的3500个汉字" \
+  --output-file=font-subset.woff2 \
+  --flavor=woff2
+```
+
+**3. 动态加载：**
+```typescript
+// 只在需要时加载中文字体
+const ChineseFont = dynamic(() => import('@/app/fonts').then(m => m.notoSansSC));
+```
+
+---
+
+### Q5: 如何支持多语言字体？
+
+**策略 1：动态切换（推荐）**
+```typescript
+function getLocaleFont(locale: string) {
+  switch (locale) {
+    case 'zh': return notoSansSC.className;
+    case 'ja': return notoSansJP.className;
+    default: return inter.className;
+  }
+}
+```
+
+**策略 2：CSS 变量**
+```typescript
+// layout.tsx
+<html className={`${inter.variable} ${notoSansSC.variable}`}>
+
+// CSS
+.lang-en { font-family: var(--font-inter); }
+.lang-zh { font-family: var(--font-noto-sans-sc); }
+```
+
+---
+
+### Q6: 本地字体和 Google Fonts 如何选择?
+
+| 场景 | 推荐方案 | 原因 |
+|------|---------|------|
+| 英文网站 | Google Fonts | 免费、优质、自动优化 |
+| 中文网站 | Google Fonts（思源黑体） | 开源、免费、优化好 |
+| 企业品牌 | 本地字体 | 品牌统一、授权可控 |
+| 特殊设计 | 本地字体 | Google Fonts 可能没有 |
+
+**混合使用：**
+```typescript
+import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
+
+const inter = Inter({ subsets: ['latin'] });
+const brandFont = localFont({ src: './Brand.woff2' });
+
+// 英文用 Google Fonts，标题用品牌字体
+<body className={inter.className}>
+  <h1 className={brandFont.className}>品牌标题</h1>
+  <p>正文内容</p>
+</body>
+```
+
+---
+
+### Q7: 如何在暗黑模式下优化字体？
+
+**问题：**
+暗黑模式下，相同字重的字体看起来更细。
+
+**解决方案：**
+
+```css
+/* 浅色模式 */
+.light {
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+}
+
+/* 暗黑模式 - 增加字重 */
+.dark {
+  --font-weight-normal: 450;
+  --font-weight-bold: 750;
+  letter-spacing: 0.01em;  /* 稍微增加字间距 */
+}
+
+body {
+  font-weight: var(--font-weight-normal);
+}
+```
+
+---
+
+### Q8: 如何监控字体加载性能？
+
+**方法 1：Chrome DevTools**
+```
+1. 打开 DevTools
+2. Network 面板，筛选 "Font"
+3. 查看每个字体的加载时间
+```
+
+**方法 2：Font Loading API**
+```typescript
+if ('fonts' in document) {
+  document.fonts.ready.then(() => {
+    console.log('所有字体已加载');
+  });
+  
+  // 监控特定字体
+  document.fonts.load('16px Inter').then(() => {
+    console.log('Inter 已加载');
+  });
+}
+```
+
+**方法 3：Performance Observer**
+```typescript
+const observer = new PerformanceObserver((list) => {
+  for (const entry of list.getEntries()) {
+    if (entry.name.includes('font')) {
+      console.log('字体加载时间:', entry.duration);
+    }
+  }
+});
+observer.observe({ entryTypes: ['resource'] });
+```
+
+---
+
+### Q9: 字体文件应该放在哪里？
+
+**Google Fonts：**
+- ✅ 自动处理，无需手动放置
+
+**本地字体：**
+```
+推荐：public/fonts/
+- 优点：可直接访问，CDN 友好
+- 路径：/fonts/font.woff2
+
+不推荐：app/fonts/ 或 src/fonts/
+- 原因：需要额外配置，不利于 CDN
+```
+
+**配置示例：**
+```typescript
+// ✅ 推荐
+const font = localFont({
+  src: '../public/fonts/font.woff2',
+});
+
+// ❌ 不推荐
+const font = localFont({
+  src: './fonts/font.woff2',
+});
+```
+
+---
+
+### Q10: 可以在 CSS 中使用字体变量吗？
+
+**可以！推荐使用 CSS 变量方式：**
+
+```typescript
+// app/fonts.ts
+export const inter = Inter({
+  variable: '--font-inter',  // 定义 CSS 变量
+  subsets: ['latin'],
+});
+
+// app/layout.tsx
+<html className={inter.variable}>
+  <body>{children}</body>
+</html>
+
+// styles/globals.css
+body {
+  font-family: var(--font-inter), sans-serif;
+}
+
+.heading {
+  font-family: var(--font-inter);
+  font-weight: 700;
+}
+```
 
 **优势：**
-- 消除加载时的布局跳动（CLS）
-- 提升视觉体验，减少空白感
-- 渐进式加载，用户感知更快
+- ✅ 更灵活，可在任何 CSS 中使用
+- ✅ 更容易实现主题切换
+- ✅ 支持 CSS-in-JS
 
 ---
 
-## 项目结构
+## 🎓 学习路径建议
 
-```
-next-app/
-├── app/
-│   └── 19-image-optimization/          # 图像优化主目录
-│       ├── page.tsx                    # 主页（案例列表）
-│       ├── basic/                      # 基础用法
-│       │   └── page.tsx
-│       ├── responsive/                 # 响应式图片
-│       │   └── page.tsx
-│       ├── product-showcase/           # 商品展示（电商案例）
-│       │   └── page.tsx
-│       ├── gallery/                    # 图片画廊
-│       │   └── page.tsx
-│       ├── custom-loader/              # 自定义加载器
-│       │   └── page.tsx
-│       └── advanced/                   # 高级技巧
-│           └── page.tsx
-├── components/
-│   └── image-optimization/             # 图像优化组件
-│       ├── OptimizedImage.tsx          # 优化图片组件（带加载状态）
-│       ├── ResponsiveImage.tsx         # 响应式图片组件
-│       ├── ProductCard.tsx             # 商品卡片
-│       └── ImageGallery.tsx            # 图片画廊
-├── utils/
-│   └── image/                          # 图像工具函数
-│       ├── imageLoader.ts              # 自定义加载器（阿里云/七牛云/腾讯云）
-│       └── imageHelpers.ts             # 图像辅助函数
-├── styles/
-│   └── image-optimization/             # 样式文件
-│       ├── OptimizedImage.module.css
-│       ├── ProductCard.module.css
-│       ├── ImageGallery.module.css
-│       ├── Page.module.css
-│       ├── BasicPage.module.css
-│       ├── ResponsivePage.module.css
-│       ├── ProductShowcasePage.module.css
-│       ├── GalleryPage.module.css
-│       ├── CustomLoaderPage.module.css
-│       └── AdvancedPage.module.css
-└── next.config.ts                      # Next.js 配置
-```
+### 初学者
+1. 从 **基础字体加载** 开始，理解 next/font 的基本概念
+2. 学习 **Google Fonts 使用**，掌握最常用的场景
+3. 实践：为自己的项目添加一个 Google Font
+
+### 进阶开发者
+1. 学习 **本地自定义字体**，了解企业级应用需求
+2. 掌握 **多语言字体支持**，理解国际化场景
+3. 实践：为多语言项目配置合适的字体方案
+
+### 高级开发者
+1. 研究 **动态字体切换与主题**，实现复杂交互
+2. 深入字体子集化、性能优化
+3. 实践：构建一个完整的字体管理系统
 
 ---
 
-## 快速开始
+## 📦 项目运行
 
-### 1. 安装依赖
-
+### 安装依赖
 ```bash
 npm install
 ```
 
-### 2. 启动开发服务器
-
+### 开发模式
 ```bash
 npm run dev
 ```
 
-### 3. 访问示例
+访问 http://localhost:3000/20-font-optimization 查看所有示例
 
-打开浏览器访问：[http://localhost:3000/19-image-optimization](http://localhost:3000/19-image-optimization)
-
----
-
-## 详细教程
-
-### 1. 基础用法
-
-#### 1.1 本地图片
-
-```tsx
-import Image from 'next/image';
-
-export default function ProductPage() {
-  return (
-    <Image
-      src="/products/shoes.jpg"  // 图片放在 public 目录下
-      alt="舒适运动鞋"
-      width={600}
-      height={400}
-      quality={85}
-      priority  // 首屏图片优先加载
-    />
-  );
-}
-```
-
-**知识点：**
-- `src`：本地图片路径，相对于 `public` 目录
-- `alt`：替代文本，对 SEO 和无障碍访问很重要
-- `width/height`：图片实际尺寸，防止布局跳动（CLS）
-- `quality`：图片质量 1-100，建议 75-85，默认 75
-- `priority`：首屏重要图片设为 `true`，禁用懒加载
-
-#### 1.2 外部图片（需配置白名单）
-
-```tsx
-<Image
-  src="https://cdn.example.com/banner.jpg"
-  alt="横幅广告"
-  width={1200}
-  height={400}
-  quality={80}
-/>
-```
-
-**配置 next.config.ts：**
-
-```ts
-// next.config.ts
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'cdn.example.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',  // 示例图片服务
-        pathname: '/**',
-      },
-    ],
-  },
-};
-
-export default nextConfig;
-```
-
-**安全说明：**
-- 外部图片必须配置 `remotePatterns` 白名单
-- 防止恶意图片源消耗服务器资源
-- 支持通配符 `/**` 匹配所有路径
-
-#### 1.3 Fill 模式（填充容器）
-
-```tsx
-<div style={{ position: 'relative', width: '100%', height: '400px' }}>
-  <Image
-    src="/hero-banner.jpg"
-    alt="横幅"
-    fill  // 填充父容器
-    style={{ objectFit: 'cover' }}  // 裁剪适配
-    quality={85}
-  />
-</div>
-```
-
-**知识点：**
-- `fill`：图片填充父容器，不需要指定 `width` 和 `height`
-- 父容器必须设置 `position: relative`（或 `absolute`/`fixed`）
-- `objectFit` 控制图片如何适应容器：
-  - `cover`：覆盖容器，可能裁剪（推荐）
-  - `contain`：完整显示，可能留白
-  - `fill`：拉伸填充，可能变形
-
----
-
-### 2. 响应式图片
-
-#### 2.1 理解 sizes 属性
-
-**sizes 的作用：**
-
-告诉浏览器图片在不同屏幕宽度下的**实际显示尺寸**，浏览器根据这个信息和设备分辨率（DPR），选择最合适的图片源。
-
-**语法：**
-
-```
-sizes="(媒体查询) 显示宽度, (媒体查询) 显示宽度, 默认宽度"
-```
-
-#### 2.2 Banner 横幅图
-
-```tsx
-<Image
-  src="/banner.jpg"
-  alt="首页横幅"
-  width={1920}
-  height={600}
-  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 80vw"
-  quality={85}
-  priority
-/>
-```
-
-**解释：**
-- 移动端（≤640px）：100vw（占满屏幕）
-- 平板（≤1024px）：90vw（占 90% 宽度）
-- 桌面（>1024px）：80vw（占 80% 宽度）
-
-#### 2.3 卡片网格
-
-```tsx
-// 网格布局：移动端 1 列，平板 2 列，桌面 3 列
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  <Image
-    src="/product1.jpg"
-    alt="商品1"
-    width={400}
-    height={400}
-    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-    quality={80}
-  />
-  {/* 更多商品... */}
-</div>
-```
-
-**优势：**
-- 移动端加载小图（约 375px），节省流量
-- 桌面端加载大图（约 600px），保证清晰
-- 自动适配高分屏（2x、3x）
-
-#### 2.4 浏览器选择图片的过程
-
-**示例场景：**
-- 视口宽度：375px（iPhone）
-- 设备像素比（DPR）：2
-- sizes 配置：`(max-width: 640px) 100vw`
-
-**计算过程：**
-1. 匹配媒体查询：`(max-width: 640px)` 匹配，显示宽度 = `100vw`
-2. 计算实际宽度：375px × 1 = 375px
-3. 乘以 DPR：375px × 2 = 750px
-4. 选择图片：从 `deviceSizes` 中选择最接近 750px 的尺寸（如 828px）
-
-**配置 deviceSizes：**
-
-```ts
-// next.config.ts
-const nextConfig = {
-  images: {
-    deviceSizes: [320, 640, 750, 828, 1080, 1200, 1920, 2048],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    formats: ['image/webp', 'image/avif'],
-  },
-};
-```
-
----
-
-### 3. 商品展示案例
-
-#### 3.1 商品卡片组件
-
-```tsx
-// components/image-optimization/ProductCard.tsx
-'use client';
-
-import Image from 'next/image';
-import { generateBlurDataURL } from '@/utils/image/imageLoader';
-
-interface ProductCardProps {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  description?: string;
-}
-
-export default function ProductCard({ name, price, image, description }: ProductCardProps) {
-  return (
-    <div className="product-card">
-      <div className="image-wrapper">
-        <Image
-          src={image}
-          alt={name}
-          width={300}
-          height={300}
-          quality={85}
-          placeholder="blur"
-          blurDataURL={generateBlurDataURL(image)}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
-      </div>
-      <div className="content">
-        <h3>{name}</h3>
-        {description && <p>{description}</p>}
-        <div className="footer">
-          <span className="price">¥{price.toFixed(2)}</span>
-          <button>加入购物车</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-#### 3.2 电商图片优化要点
-
-**1. 懒加载策略**
-- 首屏商品（前 6-8 个）：不设置 `priority`，使用默认懒加载
-- Banner 大图：设置 `priority={true}`
-- 非首屏商品：自动懒加载
-
-**2. 占位符方案**
-```tsx
-// 方案1：模糊占位符
-placeholder="blur"
-blurDataURL="/product-blur.jpg"  // 低分辨率图片
-
-// 方案2：纯色占位
-style={{ backgroundColor: '#f5f5f5' }}
-
-// 方案3：骨架屏（CSS 动画）
-<div className="skeleton-shimmer" />
-```
-
-**3. 图片尺寸规范**
-- 商品主图：800×800（正方形）
-- 缩略图：300×300
-- 详情大图：1500×1500（点击放大）
-
-**4. 性能优化**
-
-| 优化前 | 优化后 |
-|--------|--------|
-| 所有图片一次性加载 | 懒加载，按需加载 |
-| 原图 200-500KB | 压缩后 30-80KB |
-| 不支持 WebP/AVIF | 自动使用 WebP/AVIF |
-| 移动端加载桌面大图 | 响应式，加载合适尺寸 |
-| 首屏加载 5-8 秒 | 首屏加载 1-2 秒 |
-
----
-
-### 4. 图片画廊
-
-#### 4.1 画廊组件
-
-```tsx
-// components/image-optimization/ImageGallery.tsx
-'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
-
-interface GalleryImage {
-  id: string;
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-}
-
-interface ImageGalleryProps {
-  images: GalleryImage[];
-}
-
-export default function ImageGallery({ images }: ImageGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const selectedImage = images[selectedIndex];
-
-  return (
-    <div className="gallery">
-      {/* 主图显示 */}
-      <div className="main-image">
-        <Image
-          src={selectedImage.src}
-          alt={selectedImage.alt}
-          width={selectedImage.width}
-          height={selectedImage.height}
-          quality={90}
-          priority
-          sizes="(max-width: 768px) 100vw, 800px"
-        />
-      </div>
-
-      {/* 缩略图列表 */}
-      <div className="thumbnail-list">
-        {images.map((image, index) => (
-          <button
-            key={image.id}
-            className={index === selectedIndex ? 'active' : ''}
-            onClick={() => setSelectedIndex(index)}
-          >
-            <Image
-              src={image.src}
-              alt={image.alt}
-              width={100}
-              height={100}
-              quality={60}  // 缩略图降低质量
-              sizes="100px"
-            />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-#### 4.2 优化技巧
-
-**1. 主图与缩略图的差异**
-- **主图**：`quality={90}`，`priority={true}`，高质量优先加载
-- **缩略图**：`quality={60}`，懒加载，降低质量减小文件
-
-**2. 预加载相邻图片**
-```tsx
-useEffect(() => {
-  // 预加载前后相邻图片
-  const preloadImages = [
-    images[selectedIndex - 1],
-    images[selectedIndex + 1],
-  ].filter(Boolean);
-  
-  preloadImages.forEach(img => {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = img.src;
-    document.head.appendChild(link);
-  });
-}, [selectedIndex]);
-```
-
-**3. 虚拟滚动（大量图片）**
-- 画廊图片超过 100 张时，使用虚拟滚动
-- 只渲染可见区域的缩略图
-- 推荐库：`react-window`、`react-virtualized`
-
----
-
-### 5. 自定义加载器
-
-#### 5.1 为什么需要自定义 Loader？
-
-**企业级场景：**
-- 已有阿里云 OSS、七牛云、腾讯云 COS 等图片服务
-- 需要使用云服务商的图片处理功能（缩放、水印、格式转换）
-- 降低成本，利用现有 CDN 资源
-
-#### 5.2 阿里云 OSS Loader
-
-```ts
-// utils/image/imageLoader.ts
-export interface ImageLoaderParams {
-  src: string;
-  width: number;
-  quality?: number;
-}
-
-export function aliOssLoader({ src, width, quality = 80 }: ImageLoaderParams): string {
-  const base = 'https://img.alicdn.com';
-  // 阿里云 OSS 图片处理参数
-  return `${base}/${src}?x-oss-process=image/resize,w_${width}/quality,q_${quality}`;
-}
-```
-
-**使用：**
-```tsx
-<Image
-  loader={aliOssLoader}
-  src="products/demo-product.jpg"
-  alt="商品图片"
-  width={600}
-  height={400}
-  quality={80}
-/>
-```
-
-**阿里云 OSS 常用参数：**
-- `resize,w_宽度`：按宽度缩放
-- `quality,q_质量`：调整质量（1-100）
-- `format,webp`：转换为 WebP 格式
-- `watermark`：添加水印
-
-#### 5.3 七牛云 Loader
-
-```ts
-export function qiniuLoader({ src, width, quality = 80 }: ImageLoaderParams): string {
-  const base = 'https://cdn.qiniu.com';
-  return `${base}/${src}?imageView2/2/w/${width}/q/${quality}`;
-}
-```
-
-**七牛云参数：**
-- `imageView2/2/w/宽度`：限定宽度，高度自适应
-- `q/质量`：图片质量
-- `format/webp`：输出格式
-
-#### 5.4 腾讯云 COS Loader
-
-```ts
-export function tencentCosLoader({ src, width, quality = 80 }: ImageLoaderParams): string {
-  const base = 'https://example.cos.ap-guangzhou.myqcloud.com';
-  return `${base}/${src}?imageMogr2/thumbnail/${width}x/quality/${quality}`;
-}
-```
-
-**腾讯云参数：**
-- `imageMogr2/thumbnail/宽度x`：缩略图
-- `quality/质量`：图片质量
-- `format/webp`：格式转换
-
-#### 5.5 全局配置 Loader
-
-```ts
-// next.config.ts
-const nextConfig = {
-  images: {
-    loader: 'custom',
-    loaderFile: './utils/image/imageLoader.ts',
-  },
-};
-
-// utils/image/imageLoader.ts
-export default function customLoader({ src, width, quality }: ImageLoaderParams) {
-  // 默认使用阿里云 OSS
-  return aliOssLoader({ src, width, quality });
-}
-```
-
-**使用：**
-```tsx
-// 不需要指定 loader，自动使用全局配置
-<Image
-  src="products/demo-product.jpg"
-  alt="商品图片"
-  width={600}
-  height={400}
-/>
-```
-
----
-
-### 6. 高级技巧
-
-#### 6.1 关键性能指标
-
-**LCP (Largest Contentful Paint)**
-- **定义**：最大内容绘制时间
-- **目标**：< 2.5 秒
-- **优化**：首屏大图设置 `priority={true}`，使用 CDN
-
-**CLS (Cumulative Layout Shift)**
-- **定义**：累积布局偏移
-- **目标**：< 0.1
-- **优化**：始终指定 `width` 和 `height`，使用 `placeholder`
-
-**FID (First Input Delay)**
-- **定义**：首次输入延迟
-- **目标**：< 100 毫秒
-- **优化**：使用懒加载，避免大量图片同时加载
-
-#### 6.2 性能监控工具
-
-**1. Chrome DevTools**
+### 生产构建
 ```bash
-1. 打开开发者工具（F12）
-2. Network 面板 → 过滤 Img 类型
-3. 查看：
-   - 图片实际加载尺寸
-   - 文件大小和加载时间
-   - 格式（WebP/AVIF/JPEG）
-   - 是否命中缓存
-```
-
-**2. Lighthouse**
-```bash
-1. Chrome DevTools → Lighthouse 面板
-2. 选择 Performance 模式
-3. 生成报告，查看：
-   - Properly size images（图片尺寸是否合适）
-   - Serve images in next-gen formats（是否使用现代格式）
-   - Defer offscreen images（是否懒加载）
-```
-
-**3. WebPageTest**
-- 访问：https://www.webpagetest.org/
-- 输入 URL，选择测试地点和设备
-- 分析 Waterfall 图和图片优化建议
-
-#### 6.3 高级优化技巧
-
-**1. 渐进式 JPEG**
-```bash
-# 使用 Sharp 库生成渐进式 JPEG
-import sharp from 'sharp';
-
-await sharp(input)
-  .jpeg({ progressive: true, quality: 85 })
-  .toFile(output);
-```
-
-**2. 图片预加载**
-```tsx
-// 在 <head> 中预加载
-<link
-  rel="preload"
-  as="image"
-  href="/hero-banner.jpg"
-  imagesrcset="/hero-640.jpg 640w, /hero-1280.jpg 1280w"
-  imagesizes="100vw"
-/>
-```
-
-**3. 响应式图片艺术指导**
-```tsx
-// 移动端用竖图，桌面端用横图
-import { useMediaQuery } from '@/hooks/useMediaQuery';
-
-function ResponsiveImage() {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  
-  return (
-    <Image
-      src={isMobile ? '/portrait.jpg' : '/landscape.jpg'}
-      alt="响应式图片"
-      width={isMobile ? 400 : 1200}
-      height={isMobile ? 600 : 400}
-    />
-  );
-}
-```
-
-**4. 调整懒加载阈值**
-```ts
-// next.config.ts
-module.exports = {
-  images: {
-    // 图片进入视口前 500px 就开始加载
-    lazyBoundary: '500px',
-  },
-};
+npm run build
+npm start
 ```
 
 ---
 
-## 最佳实践
-
-### ✅ 基础配置
-
-- [ ] 所有图片使用 `next/image`，禁用 `<img>` 标签
-- [ ] 配置 `remotePatterns` 白名单
-- [ ] 配置 `deviceSizes` 和 `imageSizes`
-- [ ] 启用 WebP 和 AVIF 格式
-
-### ✅ 图片属性
-
-- [ ] 始终提供有意义的 `alt` 属性
-- [ ] 指定 `width` 和 `height`，防止布局跳动
-- [ ] 首屏图片设置 `priority={true}`
-- [ ] 合理配置 `quality`（75-85）
-- [ ] 精确配置 `sizes` 属性
-
-### ✅ 加载优化
-
-- [ ] 非首屏图片使用懒加载
-- [ ] 使用 `placeholder` 占位符
-- [ ] 长列表使用虚拟滚动
-- [ ] 关键图片预加载
-
-### ✅ 性能监控
-
-- [ ] 定期运行 Lighthouse 检查
-- [ ] 监控 LCP、CLS 指标
-- [ ] 检查图片加载时间和大小
-- [ ] 使用真实设备测试
-
-### ✅ 电商场景
-
-- [ ] 商品主图统一规格（正方形 800×800）
-- [ ] 缩略图降低质量（quality=60-70）
-- [ ] 详情页支持大图预览（1500×1500）
-- [ ] CDN 加速，配置缓存策略
-
----
-
-## 常见问题
-
-### Q1: 图片加载很慢？
-
-**排查步骤：**
-1. ✅ 检查图片文件大小，是否超过 200KB
-2. ✅ 检查 `quality` 设置，是否过高（建议 75-85）
-3. ✅ 检查是否使用 CDN
-4. ✅ 检查网络请求，是否被阻塞
-5. ✅ 确认使用了 WebP/AVIF 格式
-
-### Q2: 移动端图片模糊？
-
-**原因：**
-- 高分屏设备（DPR 2-3）需要 2-3 倍尺寸的图片
-- `sizes` 配置不合理，加载了过小的图片
-
-**解决：**
-1. 检查 `sizes` 配置是否合理
-2. 提高 `quality` 设置（85-90）
-3. 检查 `deviceSizes` 配置
-4. 使用 Chrome DevTools 检查实际加载的图片尺寸
-
-### Q3: 页面布局跳动（CLS 高）？
-
-**原因：**
-- 图片加载时未指定尺寸，导致布局重排
-
-**解决：**
-1. 必须指定 `width` 和 `height`
-2. 使用 `placeholder="blur"` 占位符
-3. CSS 设置 `aspect-ratio` 保持宽高比
-4. 避免动态改变图片尺寸
-
-### Q4: 外部图片无法显示？
-
-**原因：**
-- 未配置 `remotePatterns` 白名单
-- 图片 URL 错误或服务器不可用
-- CORS 跨域问题
-
-**解决：**
-1. 检查 `next.config.ts` 的 `remotePatterns` 配置
-2. 检查图片 URL 是否正确
-3. 检查图片服务器 CORS 设置
-4. 使用浏览器开发者工具查看错误信息
-
-### Q5: 如何批量优化历史图片？
-
-**方案：**
-
-使用 Node.js 脚本 + Sharp 库批量处理：
-
-```js
-// scripts/optimize-images.js
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
-
-const inputDir = './public/images';
-const outputDir = './public/images-optimized';
-
-async function optimizeImage(filePath) {
-  const filename = path.basename(filePath);
-  const outputPath = path.join(outputDir, filename);
-  
-  await sharp(filePath)
-    .resize(1920, null, { withoutEnlargement: true })
-    .webp({ quality: 85 })
-    .toFile(outputPath.replace(/\.\w+$/, '.webp'));
-    
-  console.log(`Optimized: ${filename}`);
-}
-
-// 递归处理所有图片
-async function processDirectory(dir) {
-  const files = fs.readdirSync(dir);
-  
-  for (const file of files) {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    
-    if (stat.isDirectory()) {
-      await processDirectory(filePath);
-    } else if (/\.(jpg|jpeg|png)$/i.test(file)) {
-      await optimizeImage(filePath);
-    }
-  }
-}
-
-processDirectory(inputDir);
-```
-
-运行：
-```bash
-node scripts/optimize-images.js
-```
-
-### Q6: 如何防止图片盗链？
-
-**方案1：Referer 白名单（云服务商设置）**
-- 阿里云 OSS/七牛云/腾讯云 COS 都支持
-- 只允许指定域名访问图片
-
-**方案2：签名 URL**
-```ts
-// 生成带签名的临时 URL
-import crypto from 'crypto';
-
-function generateSignedUrl(imagePath: string, expiresIn: number = 3600) {
-  const secret = process.env.IMAGE_SECRET;
-  const expires = Date.now() + expiresIn * 1000;
-  const sign = crypto
-    .createHmac('sha256', secret)
-    .update(`${imagePath}${expires}`)
-    .digest('hex');
-    
-  return `${imagePath}?expires=${expires}&sign=${sign}`;
-}
-```
-
-**方案3：Next.js Middleware**
-```ts
-// middleware.ts
-import { NextRequest, NextResponse } from 'next/server';
-
-export function middleware(request: NextRequest) {
-  const referer = request.headers.get('referer');
-  const allowedDomains = ['yoursite.com'];
-  
-  if (!referer || !allowedDomains.some(domain => referer.includes(domain))) {
-    return new NextResponse('Forbidden', { status: 403 });
-  }
-  
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: '/images/:path*',
-};
-```
-
----
-
-## 📚 学习资源
+## 🔗 相关资源
 
 ### 官方文档
+- [Next.js - Optimizing Fonts](https://nextjs.org/docs/app/building-your-application/optimizing/fonts)
+- [Google Fonts](https://fonts.google.com/)
 
-- [Next.js Image 组件文档](https://nextjs.org/docs/app/api-reference/components/image)
-- [Next.js Image 配置](https://nextjs.org/docs/app/api-reference/config/next-config-js/images)
-- [Web.dev - 图片优化指南](https://web.dev/fast/#optimize-your-images)
+### 字体资源
+- [Google Fonts](https://fonts.google.com/) - 免费开源字体
+- [Adobe Fonts](https://fonts.adobe.com/) - Adobe 订阅用户免费
+- [思源黑体](https://github.com/adobe-fonts/source-han-sans) - 开源中文字体
 
-### 工具与库
+### 工具
+- [fonttools](https://github.com/fonttools/fonttools) - 字体子集化工具
+- [glyphhanger](https://github.com/filamentgroup/glyphhanger) - 字符分析工具
+- [Transfonter](https://transfonter.org/) - 在线字体转换
 
-- [Sharp](https://sharp.pixelplumbing.com/) - 高性能图片处理库
-- [ImageOptim](https://imageoptim.com/) - Mac 图片压缩工具
-- [Squoosh](https://squoosh.app/) - 在线图片优化工具
-
-### 云服务商文档
-
-- [阿里云 OSS 图片处理](https://help.aliyun.com/document_detail/44688.html)
-- [七牛云图片处理](https://developer.qiniu.com/dora/1279/basic-processing-images-imageview2)
-- [腾讯云数据万象](https://cloud.tencent.com/document/product/460/6924)
-
----
-
-## 🚀 总结
-
-### 核心要点
-
-1. **优先使用 next/image**：自动优化、懒加载、响应式
-2. **精确配置 sizes**：根据布局设计，节省流量
-3. **首屏图片优先加载**：设置 `priority={true}`
-4. **使用占位符**：消除布局跳动，提升体验
-5. **对接企业图片服务**：阿里云/七牛云/腾讯云，降低成本
-6. **性能监控**：定期检查 LCP、CLS 指标
-
-### 性能收益
-
-通过本章学习的图像优化技术，你可以实现：
-
-- 📉 图片体积减小 **60-80%**
-- ⚡ 首屏加载速度提升 **50-70%**
-- 📱 移动端流量节省 **60-80%**
-- 🎯 LCP 指标优化到 **< 2.5 秒**
-- 🔍 SEO 排名提升 **10-20%**
-
-### 下一步
-
-- 实践电商项目图片优化
-- 集成云服务商图片处理
-- 搭建图片 CDN 分发系统
-- 实现自动化图片优化流程
+### 性能测试
+- [Lighthouse](https://developers.google.com/web/tools/lighthouse)
+- [WebPageTest](https://www.webpagetest.org/)
+- [Chrome DevTools](https://developer.chrome.com/docs/devtools/)
 
 ---
 
-## 📞 反馈与支持
+## 📝 总结
 
-如有问题或建议，欢迎提交 Issue 或 Pull Request！
+通过本章学习，你应该掌握：
 
-**Happy Coding! 🎉**
+✅ Next.js 字体优化的核心原理  
+✅ next/font 的完整使用方法  
+✅ Google Fonts 和本地字体的配置  
+✅ 多语言字体支持策略  
+✅ 动态字体切换与主题管理  
+✅ 字体性能优化最佳实践  
+✅ 常见问题的解决方案  
+
+**关键要点：**
+1. 始终使用 `next/font`，避免手动 `@font-face`
+2. 设置 `display: 'swap'` 确保文字可见
+3. 使用字体子集化减少文件体积
+4. 配置合适的 fallback 字体
+5. 注意字体授权与合规
+6. 持续监控字体加载性能
+
+---
+
+## 📧 反馈与贡献
+
+如有问题或建议，欢迎提 Issue 或 Pull Request！
+
+---
+
+**Happy Coding! 🚀**
