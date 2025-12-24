@@ -1695,16 +1695,385 @@ useBroadcast('channel-name', (data) => {
 
 #### Q5: 如何与 Server Actions 协作？
 
-**A:** 在 Server Action 中更新状态后，可以调用 `mutate` 刷新客户端状态：
+**A:** Server Actions 和状态管理可以很好地协作，主要有以下几种方式：
+
+##### 方式一：Server Actions + Zustand（推荐）
+
+**场景：** 更新用户信息后，同步更新全局状态
+
+**1. 创建 Server Action：**
 
 ```typescript
+// app/profile/actions.ts
 'use server';
-export async function updateUser(data) {
+
+import { revalidatePath } from 'next/cache';
+
+export async function updateUserProfile(formData: FormData) {
+  const name = formData.get('name') as string;
+  const email = formData.get('email') as string;
+
   // 更新数据库
-  await updateUserInDB(data);
-  // 返回结果，客户端调用 mutate 刷新
+  const updatedUser = await db.user.update({
+    where: { id: userId },
+    data: { name, email },
+  });
+
+  // 刷新页面缓存
+  revalidatePath('/profile');
+
+  // 返回更新后的数据
+  return {
+    success: true,
+    user: updatedUser,
+  };
 }
 ```
+
+**2. 在组件中调用并更新状态：**
+
+```typescript
+// components/ProfileForm.tsx
+'use client';
+
+import { updateUserProfile } from '@/app/profile/actions';
+import { useUserStore } from '@/stores/user';
+
+export function ProfileForm() {
+  const setUser = useUserStore((state) => state.setUser);
+  const [isPending, startTransition] = useTransition();
+
+  const handleSubmit = async (formData: FormData) => {
+    startTransition(async () => {
+      try {
+        const result = await updateUserProfile(formData);
+        
+        if (result.success) {
+          // 更新 Zustand Store
+          setUser(result.user);
+          
+          alert('更新成功！');
+        }
+      } catch (error) {
+        alert('更新失败');
+      }
+    });
+  };
+
+  return (
+    <form action={handleSubmit}>
+      {/* 表单字段 */}
+    </form>
+  );
+}
+```
+
+**优势：**
+- ✅ 类型安全：TypeScript 自动推断返回类型
+- ✅ 简单直接：直接调用函数，无需 fetch
+- ✅ 自动刷新：`revalidatePath` 自动刷新页面数据
+
+---
+
+##### 方式二：Server Actions + SWR（适合异步数据）
+
+**场景：** 更新数据后，刷新 SWR 缓存
+
+**1. Server Action：**
+
+```typescript
+// app/todos/actions.ts
+'use server';
+
+import { revalidatePath } from 'next/cache';
+
+export async function addTodo(formData: FormData) {
+  const title = formData.get('title') as string;
+  
+  await db.todo.create({
+    data: { title, userId },
+  });
+
+  revalidatePath('/todos');
+  
+  return { success: true };
+}
+```
+
+**2. 在组件中使用 SWR：**
+
+```typescript
+// components/TodoList.tsx
+'use client';
+
+import { addTodo } from '@/app/todos/actions';
+import useSWR, { mutate } from 'swr';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function TodoList() {
+  const { data, isLoading } = useSWR('/api/todos', fetcher);
+  const [isPending, startTransition] = useTransition();
+
+  const handleAdd = async (formData: FormData) => {
+    startTransition(async () => {
+      await addTodo(formData);
+      
+      // 手动刷新 SWR 缓存
+      mutate('/api/todos');
+    });
+  };
+
+  return (
+    <div>
+      <form action={handleAdd}>
+        {/* 表单 */}
+      </form>
+      {/* 列表 */}
+    </div>
+  );
+}
+```
+
+**优势：**
+- ✅ 自动缓存：SWR 自动管理缓存
+- ✅ 后台更新：`mutate` 可以在后台刷新
+- ✅ 乐观更新：可以先更新 UI，再刷新数据
+
+---
+
+##### 方式三：Server Actions + Redux（企业级场景）
+
+**场景：** 复杂业务逻辑，需要 Redux 中间件支持
+
+**1. Server Action：**
+
+```typescript
+// app/orders/actions.ts
+'use server';
+
+export async function createOrder(formData: FormData) {
+  const items = JSON.parse(formData.get('items') as string);
+  
+  const order = await db.order.create({
+    data: {
+      items,
+      userId,
+      status: 'pending',
+    },
+  });
+
+  revalidatePath('/orders');
+  
+  return { success: true, order };
+}
+```
+
+**2. Redux Thunk 集成：**
+
+```typescript
+// stores/orderSlice.ts
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createOrder } from '@/app/orders/actions';
+
+export const createOrderAsync = createAsyncThunk(
+  'orders/create',
+  async (formData: FormData) => {
+    const result = await createOrder(formData);
+    return result.order;
+  }
+);
+
+const orderSlice = createSlice({
+  name: 'orders',
+  initialState: { items: [], loading: false },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(createOrderAsync.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createOrderAsync.fulfilled, (state, action) => {
+        state.items.push(action.payload);
+        state.loading = false;
+      });
+  },
+});
+```
+
+**3. 在组件中使用：**
+
+```typescript
+// components/OrderForm.tsx
+'use client';
+
+import { useDispatch } from 'react-redux';
+import { createOrderAsync } from '@/stores/orderSlice';
+
+export function OrderForm() {
+  const dispatch = useDispatch();
+
+  const handleSubmit = async (formData: FormData) => {
+    dispatch(createOrderAsync(formData));
+  };
+
+  return <form action={handleSubmit}>...</form>;
+}
+```
+
+**优势：**
+- ✅ 中间件支持：可以使用 Redux 中间件（日志、持久化）
+- ✅ 复杂状态：适合复杂的状态管理场景
+- ✅ DevTools：强大的调试工具
+
+---
+
+##### 方式四：Server Actions + 通知中心（实时更新）
+
+**场景：** 操作完成后，推送通知到通知中心
+
+**1. Server Action：**
+
+```typescript
+// app/approval/actions.ts
+'use server';
+
+import { revalidatePath } from 'next/cache';
+
+export async function approveRequest(id: string) {
+  await db.request.update({
+    where: { id },
+    data: { status: 'approved' },
+  });
+
+  revalidatePath('/approval');
+
+  // 返回通知数据
+  return {
+    success: true,
+    notification: {
+      id: Date.now().toString(),
+      content: '您的申请已通过审批',
+      type: 'success',
+      timestamp: Date.now(),
+    },
+  };
+}
+```
+
+**2. 在组件中处理通知：**
+
+```typescript
+// components/ApprovalButton.tsx
+'use client';
+
+import { approveRequest } from '@/app/approval/actions';
+import { useNotificationStore } from '@/stores/notification';
+
+export function ApprovalButton({ requestId }: { requestId: string }) {
+  const addNotification = useNotificationStore((state) => state.add);
+  const [isPending, startTransition] = useTransition();
+
+  const handleApprove = () => {
+    startTransition(async () => {
+      const result = await approveRequest(requestId);
+      
+      if (result.success && result.notification) {
+        // 添加到通知中心
+        addNotification(result.notification);
+      }
+    });
+  };
+
+  return (
+    <button onClick={handleApprove} disabled={isPending}>
+      审批通过
+    </button>
+  );
+}
+```
+
+**优势：**
+- ✅ 实时反馈：操作后立即显示通知
+- ✅ 用户体验：友好的交互反馈
+- ✅ 解耦设计：通知逻辑独立管理
+
+---
+
+##### 最佳实践总结
+
+**1. 选择合适的协作方式：**
+
+| 场景 | 推荐方案 | 原因 |
+|------|---------|------|
+| 简单状态更新 | Zustand + Server Actions | 简单直接，无需额外配置 |
+| 异步数据获取 | SWR + Server Actions | 自动缓存，性能优秀 |
+| 复杂业务逻辑 | Redux + Server Actions | 中间件支持，调试方便 |
+| 实时通知 | Zustand + Server Actions | 轻量级，响应快速 |
+
+**2. 错误处理：**
+
+```typescript
+const handleSubmit = async (formData: FormData) => {
+  startTransition(async () => {
+    try {
+      const result = await serverAction(formData);
+      
+      if (result.success) {
+        // 更新状态
+        updateStore(result.data);
+      } else {
+        // 显示错误
+        showError(result.message);
+      }
+    } catch (error) {
+      // 处理异常
+      showError(error instanceof Error ? error.message : '操作失败');
+    }
+  });
+};
+```
+
+**3. 乐观更新：**
+
+```typescript
+const handleUpdate = async (id: string, data: FormData) => {
+  // 1. 乐观更新 UI
+  updateStoreOptimistically(id, data);
+  
+  try {
+    // 2. 调用 Server Action
+    await updateItem(id, data);
+  } catch (error) {
+    // 3. 失败时回滚
+    rollbackUpdate(id);
+    showError('更新失败');
+  }
+};
+```
+
+**4. 批量操作：**
+
+```typescript
+// Server Action 支持批量操作
+export async function batchUpdate(formData: FormData) {
+  const ids = JSON.parse(formData.get('ids') as string);
+  
+  await db.$transaction(
+    ids.map(id => db.item.update({ where: { id }, data: { ... } }))
+  );
+  
+  revalidatePath('/items');
+  
+  return { success: true, count: ids.length };
+}
+```
+
+**总结：** Server Actions 和状态管理是互补的关系：
+- **Server Actions**：处理服务端逻辑（数据库操作、权限校验）
+- **状态管理**：管理客户端状态（UI 状态、缓存数据）
+
+两者结合使用，可以构建出既安全又高效的全栈应用！
 
 ---
 
