@@ -1,80 +1,259 @@
-# 第十八章：国际化 (i18n) 与多语言支持
+# 第19章：图像优化 - next/image 与企业级实践
 
-## 📚 理论讲解
+> 本章节深入讲解 Next.js 图像优化的核心技术，包括 `next/image` 组件的使用、响应式图片、自定义加载器、性能监控等企业级实践。
 
-### 1. 国际化与本地化的区别
+## 📚 目录
 
-- **国际化（i18n）**：为应用支持多语言、多地区、多文化的能力，通常在开发阶段实现。它不仅仅是翻译文本，还包括日期、货币、数字、时区、图片、富文本等多方面的适配。
-- **本地化（l10n）**：针对特定地区/语言进行内容、格式、UI、法律等适配，通常在运营阶段实现。比如中国区的法律声明、欧洲区的 GDPR 合规、阿拉伯区的 RTL 布局等。
-
-**企业级项目关注点**：
-- 多语言内容管理与同步
-- 界面文案与业务内容分离
-- URL 国际化策略（路径前缀 vs 域名）
-- SEO 优化（hreflang、sitemap）
-- 时区、货币、日期格式本地化
-- 法律合规与隐私政策
-- 团队协作与翻译审核流程
-- 移动端适配与无障碍支持
-- 性能优化（分包、懒加载、CDN）
-
-### 2. Next.js 国际化方案
-
-Next.js 内置了 i18n 路由与本地化 URL 支持。在本章中，我们使用企业级推荐方案：**next-i18next**。
-
-**为什么选择 next-i18next？**
-- 基于著名的 i18next 生态，功能强大且成熟
-- 与 Next.js 深度集成，完美支持 SSR/SSG
-- 支持命名空间（namespace），便于大型项目按模块拆分翻译文件
-- 支持复数、性别、日期、货币等复杂格式化
-- 社区活跃，文档完善，适合团队协作
-
-### 3. 核心策略与体验优化
-
-**URL 策略**：
-- **路径前缀**（推荐）：`/en/blog`、`/zh/blog`，SEO 友好，易于管理
-- **域名/子域名**：`en.example.com`、`fr.example.com`，适合大型/多品牌项目
-
-**用户体验优化**：
-- **自动检测**：根据浏览器 `Accept-Language` 自动切换
-- **回退机制**：翻译缺失时自动回退到默认语言
-- **语言切换**：提供明显的语言切换按钮，支持键盘导航
-
-**SEO 优化**：
-- 使用 `hreflang` 标签告知搜索引擎页面的其他语言版本
-- 为每个语言版本生成独立的 sitemap
-- 确保 URL 结构清晰且一致
+- [为什么需要图像优化](#为什么需要图像优化)
+- [核心知识点](#核心知识点)
+- [项目结构](#项目结构)
+- [快速开始](#快速开始)
+- [详细教程](#详细教程)
+  - [1. 基础用法](#1-基础用法)
+  - [2. 响应式图片](#2-响应式图片)
+  - [3. 商品展示案例](#3-商品展示案例)
+  - [4. 图片画廊](#4-图片画廊)
+  - [5. 自定义加载器](#5-自定义加载器)
+  - [6. 高级技巧](#6-高级技巧)
+- [最佳实践](#最佳实践)
+- [常见问题](#常见问题)
 
 ---
 
-## 💻 完整代码案例
+## 为什么需要图像优化？
 
-### 第一步：安装依赖
+### 📊 关键数据
 
-```bash
-npm install next-i18next react-i18next i18next
+- **图片占比**：图片通常占网页体积的 **60% 以上**
+- **性能影响**：图片优化可使页面加载速度提升 **50-70%**
+- **用户体验**：加载速度每提升 0.1 秒，转化率提升 **8-10%**
+- **SEO 影响**：页面速度是 Google 搜索排名的重要因素
+
+### 🎯 优化收益
+
+1. **性能提升**：减少首屏加载时间，提升 LCP（最大内容绘制）
+2. **流量节省**：移动端流量节省 **60-80%**
+3. **用户体验**：懒加载、占位符消除布局跳动
+4. **SEO 优势**：更快的加载速度提升搜索排名
+5. **自动化**：next/image 自动处理格式转换、尺寸生成
+
+---
+
+## 核心知识点
+
+### 🚀 next/image 核心特性
+
+#### 1. 自动图片优化
+
+```tsx
+import Image from 'next/image';
+
+<Image
+  src="/product.jpg"
+  alt="商品图片"
+  width={600}
+  height={400}
+  quality={85}
+/>
 ```
 
-### 第二步：配置文件
+**自动处理：**
+- ✅ 自动生成 WebP/AVIF 格式（文件减小 30-50%）
+- ✅ 根据设备生成多种尺寸（适配不同分辨率）
+- ✅ 自动压缩和优化（平衡质量和大小）
 
-#### 1. next.config.ts
+#### 2. 懒加载（Lazy Loading）
 
-```typescript
-import type { NextConfig } from "next";
+```tsx
+// 默认懒加载（非首屏图片）
+<Image src="/feature.jpg" alt="功能图" width={400} height={300} />
+
+// 禁用懒加载（首屏重要图片）
+<Image 
+  src="/hero-banner.jpg" 
+  alt="首页横幅" 
+  width={1200} 
+  height={400}
+  priority  // 优先加载
+/>
+```
+
+**工作原理：**
+- 图片进入视口附近时才开始加载
+- 首屏重要图片设置 `priority` 优先加载
+- 减少首屏资源，提升加载速度
+
+#### 3. 响应式图片
+
+```tsx
+<Image
+  src="/banner.jpg"
+  alt="横幅"
+  width={1200}
+  height={400}
+  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 80vw"
+  quality={85}
+/>
+```
+
+**sizes 属性说明：**
+- `(max-width: 640px) 100vw`：移动端占据 100% 视口宽度
+- `(max-width: 1024px) 90vw`：平板占据 90% 视口宽度
+- `80vw`：桌面端占据 80% 视口宽度
+
+浏览器根据 `sizes` 和设备分辨率（DPR）自动选择最合适的图片尺寸。
+
+#### 4. 占位符（Placeholder）
+
+```tsx
+// 模糊占位符
+<Image
+  src="/photo.jpg"
+  alt="照片"
+  width={800}
+  height={600}
+  placeholder="blur"
+  blurDataURL="data:image/jpeg;base64,..."
+/>
+```
+
+**占位符类型：**
+- `blur`：模糊占位图（使用 base64 或低分辨率图）
+- `empty`：空白占位（可配合 CSS 背景色）
+
+**优势：**
+- 消除加载时的布局跳动（CLS）
+- 提升视觉体验，减少空白感
+- 渐进式加载，用户感知更快
+
+---
+
+## 项目结构
+
+```
+next-app/
+├── app/
+│   └── 19-image-optimization/          # 图像优化主目录
+│       ├── page.tsx                    # 主页（案例列表）
+│       ├── basic/                      # 基础用法
+│       │   └── page.tsx
+│       ├── responsive/                 # 响应式图片
+│       │   └── page.tsx
+│       ├── product-showcase/           # 商品展示（电商案例）
+│       │   └── page.tsx
+│       ├── gallery/                    # 图片画廊
+│       │   └── page.tsx
+│       ├── custom-loader/              # 自定义加载器
+│       │   └── page.tsx
+│       └── advanced/                   # 高级技巧
+│           └── page.tsx
+├── components/
+│   └── image-optimization/             # 图像优化组件
+│       ├── OptimizedImage.tsx          # 优化图片组件（带加载状态）
+│       ├── ResponsiveImage.tsx         # 响应式图片组件
+│       ├── ProductCard.tsx             # 商品卡片
+│       └── ImageGallery.tsx            # 图片画廊
+├── utils/
+│   └── image/                          # 图像工具函数
+│       ├── imageLoader.ts              # 自定义加载器（阿里云/七牛云/腾讯云）
+│       └── imageHelpers.ts             # 图像辅助函数
+├── styles/
+│   └── image-optimization/             # 样式文件
+│       ├── OptimizedImage.module.css
+│       ├── ProductCard.module.css
+│       ├── ImageGallery.module.css
+│       ├── Page.module.css
+│       ├── BasicPage.module.css
+│       ├── ResponsivePage.module.css
+│       ├── ProductShowcasePage.module.css
+│       ├── GalleryPage.module.css
+│       ├── CustomLoaderPage.module.css
+│       └── AdvancedPage.module.css
+└── next.config.ts                      # Next.js 配置
+```
+
+---
+
+## 快速开始
+
+### 1. 安装依赖
+
+```bash
+npm install
+```
+
+### 2. 启动开发服务器
+
+```bash
+npm run dev
+```
+
+### 3. 访问示例
+
+打开浏览器访问：[http://localhost:3000/19-image-optimization](http://localhost:3000/19-image-optimization)
+
+---
+
+## 详细教程
+
+### 1. 基础用法
+
+#### 1.1 本地图片
+
+```tsx
+import Image from 'next/image';
+
+export default function ProductPage() {
+  return (
+    <Image
+      src="/products/shoes.jpg"  // 图片放在 public 目录下
+      alt="舒适运动鞋"
+      width={600}
+      height={400}
+      quality={85}
+      priority  // 首屏图片优先加载
+    />
+  );
+}
+```
+
+**知识点：**
+- `src`：本地图片路径，相对于 `public` 目录
+- `alt`：替代文本，对 SEO 和无障碍访问很重要
+- `width/height`：图片实际尺寸，防止布局跳动（CLS）
+- `quality`：图片质量 1-100，建议 75-85，默认 75
+- `priority`：首屏重要图片设为 `true`，禁用懒加载
+
+#### 1.2 外部图片（需配置白名单）
+
+```tsx
+<Image
+  src="https://cdn.example.com/banner.jpg"
+  alt="横幅广告"
+  width={1200}
+  height={400}
+  quality={80}
+/>
+```
+
+**配置 next.config.ts：**
+
+```ts
+// next.config.ts
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  reactCompiler: true,
-  i18n: {
-    locales: ['zh', 'en', 'fr'],      // 支持的语言列表
-    defaultLocale: 'zh',               // 默认语言
-    localeDetection: true,             // 自动检测用户语言
-  },
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
+        hostname: 'cdn.example.com',
         port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',  // 示例图片服务
         pathname: '/**',
       },
     ],
@@ -84,783 +263,744 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-**配置说明**：
-- `locales`：定义支持的所有语言代码
-- `defaultLocale`：当无法检测用户语言时使用的默认语言
-- `localeDetection`：启用后会根据浏览器的 `Accept-Language` 自动跳转
+**安全说明：**
+- 外部图片必须配置 `remotePatterns` 白名单
+- 防止恶意图片源消耗服务器资源
+- 支持通配符 `/**` 匹配所有路径
 
-#### 2. next-i18next.config.js
+#### 1.3 Fill 模式（填充容器）
 
-```javascript
-// next-i18next.config.js
-module.exports = {
-  i18n: {
-    defaultLocale: 'zh',
-    locales: ['zh', 'en', 'fr'],
+```tsx
+<div style={{ position: 'relative', width: '100%', height: '400px' }}>
+  <Image
+    src="/hero-banner.jpg"
+    alt="横幅"
+    fill  // 填充父容器
+    style={{ objectFit: 'cover' }}  // 裁剪适配
+    quality={85}
+  />
+</div>
+```
+
+**知识点：**
+- `fill`：图片填充父容器，不需要指定 `width` 和 `height`
+- 父容器必须设置 `position: relative`（或 `absolute`/`fixed`）
+- `objectFit` 控制图片如何适应容器：
+  - `cover`：覆盖容器，可能裁剪（推荐）
+  - `contain`：完整显示，可能留白
+  - `fill`：拉伸填充，可能变形
+
+---
+
+### 2. 响应式图片
+
+#### 2.1 理解 sizes 属性
+
+**sizes 的作用：**
+
+告诉浏览器图片在不同屏幕宽度下的**实际显示尺寸**，浏览器根据这个信息和设备分辨率（DPR），选择最合适的图片源。
+
+**语法：**
+
+```
+sizes="(媒体查询) 显示宽度, (媒体查询) 显示宽度, 默认宽度"
+```
+
+#### 2.2 Banner 横幅图
+
+```tsx
+<Image
+  src="/banner.jpg"
+  alt="首页横幅"
+  width={1920}
+  height={600}
+  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 80vw"
+  quality={85}
+  priority
+/>
+```
+
+**解释：**
+- 移动端（≤640px）：100vw（占满屏幕）
+- 平板（≤1024px）：90vw（占 90% 宽度）
+- 桌面（>1024px）：80vw（占 80% 宽度）
+
+#### 2.3 卡片网格
+
+```tsx
+// 网格布局：移动端 1 列，平板 2 列，桌面 3 列
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <Image
+    src="/product1.jpg"
+    alt="商品1"
+    width={400}
+    height={400}
+    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+    quality={80}
+  />
+  {/* 更多商品... */}
+</div>
+```
+
+**优势：**
+- 移动端加载小图（约 375px），节省流量
+- 桌面端加载大图（约 600px），保证清晰
+- 自动适配高分屏（2x、3x）
+
+#### 2.4 浏览器选择图片的过程
+
+**示例场景：**
+- 视口宽度：375px（iPhone）
+- 设备像素比（DPR）：2
+- sizes 配置：`(max-width: 640px) 100vw`
+
+**计算过程：**
+1. 匹配媒体查询：`(max-width: 640px)` 匹配，显示宽度 = `100vw`
+2. 计算实际宽度：375px × 1 = 375px
+3. 乘以 DPR：375px × 2 = 750px
+4. 选择图片：从 `deviceSizes` 中选择最接近 750px 的尺寸（如 828px）
+
+**配置 deviceSizes：**
+
+```ts
+// next.config.ts
+const nextConfig = {
+  images: {
+    deviceSizes: [320, 640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/webp', 'image/avif'],
   },
-  localePath: typeof window === 'undefined' 
-    ? require('path').resolve('./public/locales') 
-    : '/locales',
-  reloadOnPrerender: process.env.NODE_ENV === 'development',
 };
 ```
 
-**配置说明**：
-- `localePath`：翻译文件存放路径
-- `reloadOnPrerender`：开发环境下自动重载翻译文件
+---
 
-### 第三步：创建翻译资源文件
+### 3. 商品展示案例
 
-#### 目录结构
+#### 3.1 商品卡片组件
 
-```
-public/
-  locales/
-    zh/
-      common.json
-    en/
-      common.json
-    fr/
-      common.json
-```
+```tsx
+// components/image-optimization/ProductCard.tsx
+'use client';
 
-#### public/locales/zh/common.json
+import Image from 'next/image';
+import { generateBlurDataURL } from '@/utils/image/imageLoader';
 
-```json
-{
-  "welcome": "欢迎，{{name}}！",
-  "logout": "退出登录",
-  "cart": "购物车({{count}})",
-  "username": "用户名",
-  "login": "登录",
-  "error_required": "请输入{{field}}",
-  "date_format": "YYYY年MM月DD日",
-  "change_language": "切换语言",
-  "home": "首页",
-  "blog": "博客"
-}
-```
-
-#### public/locales/en/common.json
-
-```json
-{
-  "welcome": "Welcome, {{name}}!",
-  "logout": "Logout",
-  "cart": "Cart ({{count}})",
-  "username": "Username",
-  "login": "Login",
-  "error_required": "Please enter {{field}}",
-  "date_format": "YYYY-MM-DD",
-  "change_language": "Change Language",
-  "home": "Home",
-  "blog": "Blog"
-}
-```
-
-#### public/locales/fr/common.json
-
-```json
-{
-  "welcome": "Bienvenue, {{name}}!",
-  "logout": "Déconnexion",
-  "cart": "Panier ({{count}})",
-  "username": "Nom d'utilisateur",
-  "login": "Connexion",
-  "error_required": "Veuillez saisir {{field}}",
-  "date_format": "DD/MM/YYYY",
-  "change_language": "Changer de langue",
-  "home": "Accueil",
-  "blog": "Blog"
-}
-```
-
-**翻译文件说明**：
-- 使用 `{{变量名}}` 进行插值，支持动态内容
-- 按功能模块拆分文件（如 `common.json`、`auth.json`、`product.json`）
-- 保持所有语言的 key 一致，便于维护
-
-### 第四步：创建通用组件
-
-#### 1. Spacing 组件（布局容器）
-
-```typescript
-// components/common/Spacing.tsx
-import React from 'react';
-
-interface SpacingProps {
-  size?: number | string;
-  flex?: boolean;
-  direction?: 'row' | 'column';
-  gap?: number | string;
-  children?: React.ReactNode;
-  className?: string;
-  align?: 'start' | 'center' | 'end' | 'baseline' | 'stretch';
-  justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
+interface ProductCardProps {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  description?: string;
 }
 
-export const Spacing: React.FC<SpacingProps> = ({
-  size,
-  flex = false,
-  direction = 'column',
-  gap,
-  children,
-  className = '',
-  align = 'stretch',
-  justify = 'start',
-}) => {
-  const style: React.CSSProperties = {};
-
-  if (size) {
-    if (direction === 'row') style.width = size;
-    else style.height = size;
-  }
-
-  if (flex) {
-    style.display = 'flex';
-    style.flexDirection = direction;
-    if (gap) style.gap = typeof gap === 'number' ? `${gap}px` : gap;
-    
-    const alignMap = {
-      start: 'flex-start',
-      center: 'center',
-      end: 'flex-end',
-      baseline: 'baseline',
-      stretch: 'stretch',
-    };
-    
-    const justifyMap = {
-      start: 'flex-start',
-      center: 'center',
-      end: 'flex-end',
-      between: 'space-between',
-      around: 'space-around',
-      evenly: 'space-evenly',
-    };
-
-    style.alignItems = alignMap[align];
-    style.justifyContent = justifyMap[justify];
-  }
-
+export default function ProductCard({ name, price, image, description }: ProductCardProps) {
   return (
-    <div className={className} style={style}>
-      {children}
+    <div className="product-card">
+      <div className="image-wrapper">
+        <Image
+          src={image}
+          alt={name}
+          width={300}
+          height={300}
+          quality={85}
+          placeholder="blur"
+          blurDataURL={generateBlurDataURL(image)}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
+      </div>
+      <div className="content">
+        <h3>{name}</h3>
+        {description && <p>{description}</p>}
+        <div className="footer">
+          <span className="price">¥{price.toFixed(2)}</span>
+          <button>加入购物车</button>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default Spacing;
-```
-
-**组件说明**：
-- 替代手写 flex CSS，统一管理布局逻辑
-- 支持方向、间距、对齐等常用布局属性
-- 类型安全，避免使用 any
-
-#### 2. LanguageSwitcher 组件（语言切换器）
-
-```typescript
-// components/LanguageSwitcher.tsx
-import React from 'react';
-import { useRouter } from 'next/router';
-import Spacing from './common/Spacing';
-
-export default function LanguageSwitcher() {
-  const router = useRouter();
-  const { locales, locale: currentLocale, asPath } = router;
-
-  const toggleLanguage = (newLocale: string) => {
-    // 切换语言并保留当前路径
-    router.push(asPath, asPath, { locale: newLocale });
-  };
-
-  if (!locales) return null;
-
-  return (
-    <Spacing flex direction="row" gap={10} align="center">
-      {locales.map((lng) => (
-        <button
-          key={lng}
-          className={`btn ${lng === currentLocale ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-          disabled={lng === currentLocale}
-          onClick={() => toggleLanguage(lng)}
-        >
-          {lng.toUpperCase()}
-        </button>
-      ))}
-    </Spacing>
-  );
 }
 ```
 
-**组件说明**：
-- 使用 `router.push` 的第三个参数切换语言
-- 保留当前路径，用户体验更好
-- 当前语言按钮禁用并高亮显示
+#### 3.2 电商图片优化要点
 
-#### 3. LocalizedImage 组件（国际化图片）
+**1. 懒加载策略**
+- 首屏商品（前 6-8 个）：不设置 `priority`，使用默认懒加载
+- Banner 大图：设置 `priority={true}`
+- 非首屏商品：自动懒加载
 
-```typescript
-// components/LocalizedImage.tsx
-import React from 'react';
-import { useRouter } from 'next/router';
+**2. 占位符方案**
+```tsx
+// 方案1：模糊占位符
+placeholder="blur"
+blurDataURL="/product-blur.jpg"  // 低分辨率图片
 
-interface LocalizedImageProps {
-  srcs: { [key: string]: string };
+// 方案2：纯色占位
+style={{ backgroundColor: '#f5f5f5' }}
+
+// 方案3：骨架屏（CSS 动画）
+<div className="skeleton-shimmer" />
+```
+
+**3. 图片尺寸规范**
+- 商品主图：800×800（正方形）
+- 缩略图：300×300
+- 详情大图：1500×1500（点击放大）
+
+**4. 性能优化**
+
+| 优化前 | 优化后 |
+|--------|--------|
+| 所有图片一次性加载 | 懒加载，按需加载 |
+| 原图 200-500KB | 压缩后 30-80KB |
+| 不支持 WebP/AVIF | 自动使用 WebP/AVIF |
+| 移动端加载桌面大图 | 响应式，加载合适尺寸 |
+| 首屏加载 5-8 秒 | 首屏加载 1-2 秒 |
+
+---
+
+### 4. 图片画廊
+
+#### 4.1 画廊组件
+
+```tsx
+// components/image-optimization/ImageGallery.tsx
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+
+interface GalleryImage {
+  id: string;
+  src: string;
   alt: string;
-  className?: string;
+  width: number;
+  height: number;
 }
 
-export default function LocalizedImage({ srcs, alt, className }: LocalizedImageProps) {
-  const { locale = 'zh' } = useRouter();
-  
-  // 优先使用当前语言的图片，否则使用默认语言(zh)或第一个可用的
-  const src = srcs[locale] || srcs['zh'] || Object.values(srcs)[0];
-
-  return <img src={src} alt={alt} className={className} />;
-}
-```
-
-**组件说明**：
-- 根据当前语言自动选择对应的图片资源
-- 支持回退机制，避免图片加载失败
-- 适用于 banner、海报等需要多语言版本的图片
-
-### 第五步：配置 Pages Router
-
-#### pages/_app.tsx
-
-```typescript
-import type { AppProps } from 'next/app';
-import { appWithTranslation } from 'next-i18next';
-import '../app/globals.css';
-
-function MyApp({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
+interface ImageGalleryProps {
+  images: GalleryImage[];
 }
 
-export default appWithTranslation(MyApp);
-```
-
-**关键点**：
-- 必须使用 `appWithTranslation` 包裹 App 组件
-- 这是 next-i18next 的核心集成步骤
-
-### 第六步：创建演示页面
-
-#### 1. 基础演示页面
-
-```typescript
-// pages/18-i18n/demo.tsx
-import React, { useState } from 'react';
-import { GetServerSideProps } from 'next';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import Spacing from '../../components/common/Spacing';
-import LanguageSwitcher from '../../components/LanguageSwitcher';
-import LocalizedImage from '../../components/LocalizedImage';
-
-export default function I18nDemoPage() {
-  const { t } = useTranslation('common');
-  const [cartCount, setCartCount] = useState(0);
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username) {
-      setError(t('error_required', { field: t('username') }));
-    } else {
-      setError('');
-      alert(t('welcome', { name: username }));
-    }
-  };
+export default function ImageGallery({ images }: ImageGalleryProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selectedImage = images[selectedIndex];
 
   return (
-    <div className="container mx-auto p-8">
-      <Spacing flex direction="column" gap={32}>
-        {/* 顶部导航 */}
-        <Spacing flex direction="row" justify="between" align="center">
-          <h1 className="text-3xl font-bold">{t('home')}</h1>
-          <LanguageSwitcher />
-        </Spacing>
+    <div className="gallery">
+      {/* 主图显示 */}
+      <div className="main-image">
+        <Image
+          src={selectedImage.src}
+          alt={selectedImage.alt}
+          width={selectedImage.width}
+          height={selectedImage.height}
+          quality={90}
+          priority
+          sizes="(max-width: 768px) 100vw, 800px"
+        />
+      </div>
 
-        {/* 欢迎卡片 */}
-        <div className="card">
-          <div className="card-header">{t('welcome', { name: 'Guest' })}</div>
-          <div className="card-body">
-            <Spacing flex direction="column" gap={16}>
-              <p>{t('date_format')}</p>
-              
-              {/* 购物车计数器 */}
-              <Spacing flex direction="row" gap={12} align="center">
-                <span>{t('cart', { count: cartCount })}</span>
-                <button 
-                  className="btn btn-primary btn-sm" 
-                  onClick={() => setCartCount(prev => prev + 1)}
-                >
-                  +1
-                </button>
-              </Spacing>
-
-              {/* 国际化图片 */}
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold mb-2">Localized Image:</h3>
-                <LocalizedImage 
-                  srcs={{
-                    zh: 'https://picsum.photos/seed/zh/400/200',
-                    en: 'https://picsum.photos/seed/en/400/200'
-                  }}
-                  alt="Banner"
-                  className="rounded-lg shadow-md"
-                />
-              </div>
-            </Spacing>
-          </div>
-        </div>
-
-        {/* 登录表单 */}
-        <div className="card">
-          <div className="card-header">{t('login')}</div>
-          <div className="card-body">
-            <form onSubmit={handleLogin}>
-              <Spacing flex direction="column" gap={16}>
-                <div className="form-group">
-                  <label className="form-label">{t('username')}</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder={t('username')}
-                  />
-                  {error && <p className="form-error">{error}</p>}
-                </div>
-                <button type="submit" className="btn btn-success w-full">
-                  {t('login')}
-                </button>
-              </Spacing>
-            </form>
-          </div>
-        </div>
-      </Spacing>
-    </div>
-  );
-}
-
-export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale ?? 'zh', ['common'])),
-    },
-  };
-};
-```
-
-**页面功能**：
-- ✅ 多语言界面切换
-- ✅ 变量插值（欢迎语、购物车计数）
-- ✅ 表单验证国际化
-- ✅ 国际化图片展示
-- ✅ 服务端渲染（SSR）
-
-#### 2. 动态路由国际化
-
-```typescript
-// pages/18-i18n/blog/[slug].tsx
-import React from 'react';
-import { GetServerSideProps } from 'next';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import Spacing from '../../../components/common/Spacing';
-import LanguageSwitcher from '../../../components/LanguageSwitcher';
-
-interface BlogPost {
-  id: number;
-  title: string;
-  content: string;
-  slug: string;
-}
-
-interface DynamicRoutePageProps {
-  post: BlogPost;
-}
-
-export default function DynamicRoutePage({ post }: DynamicRoutePageProps) {
-  const { t } = useTranslation('common');
-
-  return (
-    <div className="container mx-auto p-8">
-      <Spacing flex direction="column" gap={24}>
-        <Spacing flex direction="row" justify="between" align="center">
-          <h1 className="text-3xl font-bold">{t('blog')}</h1>
-          <LanguageSwitcher />
-        </Spacing>
-
-        <div className="card">
-          <div className="card-header">
-            <h2 className="text-2xl font-bold">{post.title}</h2>
-          </div>
-          <div className="card-body">
-            <p className="text-gray-700">{post.content}</p>
-          </div>
-        </div>
-
-        <button 
-          className="btn btn-secondary"
-          onClick={() => window.history.back()}
-        >
-          ← {t('home')}
-        </button>
-      </Spacing>
-    </div>
-  );
-}
-
-export const getServerSideProps: GetServerSideProps = async ({ locale, params }) => {
-  // 模拟从数据库/API 获取多语言内容
-  const mockPosts: Record<string, BlogPost> = {
-    zh: {
-      id: 1,
-      title: '如何使用 Next.js 实现国际化',
-      content: '这是一篇关于 Next.js 国际化的详细教程，涵盖了从配置到实战的完整流程...',
-      slug: params?.slug as string,
-    },
-    en: {
-      id: 1,
-      title: 'How to Implement i18n in Next.js',
-      content: 'This is a detailed tutorial about Next.js internationalization, covering the complete process from configuration to practice...',
-      slug: params?.slug as string,
-    },
-    fr: {
-      id: 1,
-      title: 'Comment implémenter l\'i18n dans Next.js',
-      content: 'Ceci est un tutoriel détaillé sur l\'internationalisation de Next.js, couvrant le processus complet de la configuration à la pratique...',
-      slug: params?.slug as string,
-    },
-  };
-
-  const post = mockPosts[locale || 'zh'];
-
-  return {
-    props: {
-      ...(await serverSideTranslations(locale ?? 'zh', ['common'])),
-      post,
-    },
-  };
-};
-```
-
-**动态路由说明**：
-- 根据 `locale` 参数从数据库/API 获取对应语言的内容
-- 实际项目中应该查询数据库的多语言字段
-- 支持 SEO 友好的 URL 结构
-
-#### 3. API 国际化
-
-```typescript
-// pages/api/i18n-demo.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { lang = 'zh' } = req.query;
-
-  // 定义多语言错误消息
-  const messages: Record<string, Record<string, string>> = {
-    zh: {
-      success: '操作成功',
-      error: '操作失败',
-      unauthorized: '未授权',
-      notFound: '未找到资源',
-    },
-    en: {
-      success: 'Operation successful',
-      error: 'Operation failed',
-      unauthorized: 'Unauthorized',
-      notFound: 'Resource not found',
-    },
-    fr: {
-      success: 'Opération réussie',
-      error: 'Opération échouée',
-      unauthorized: 'Non autorisé',
-      notFound: 'Ressource introuvable',
-    },
-  };
-
-  const langMessages = messages[lang as string] || messages.zh;
-
-  // 模拟业务逻辑
-  const { action } = req.query;
-
-  if (action === 'success') {
-    return res.status(200).json({ message: langMessages.success });
-  }
-
-  if (action === 'notfound') {
-    return res.status(404).json({ error: langMessages.notFound });
-  }
-
-  return res.status(200).json({ message: langMessages.success });
-}
-```
-
-**API 国际化说明**：
-- 通过 query 参数 `lang` 指定语言
-- 返回对应语言的错误消息和提示
-- 实际项目中可以从数据库或配置文件读取
-
----
-
-## 🚀 运行与测试
-
-### 1. 启动开发服务器
-
-```bash
-npm run dev
-```
-
-### 2. 访问演示页面
-
-- 中文：http://localhost:3000/18-i18n/demo
-- 英文：http://localhost:3000/en/18-i18n/demo
-- 法语：http://localhost:3000/fr/18-i18n/demo
-
-### 3. 测试动态路由
-
-- 中文博客：http://localhost:3000/18-i18n/blog/first-post
-- 英文博客：http://localhost:3000/en/18-i18n/blog/first-post
-
-### 4. 测试 API
-
-```bash
-# 中文响应
-curl http://localhost:3000/api/i18n-demo?lang=zh&action=success
-
-# 英文响应
-curl http://localhost:3000/api/i18n-demo?lang=en&action=notfound
-```
-
----
-
-## 🎯 核心知识点总结
-
-### 1. 服务端翻译加载
-
-```typescript
-export const getServerSideProps: GetServerSideProps = async ({ locale }) => {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale ?? 'zh', ['common'])),
-    },
-  };
-};
-```
-
-**为什么需要服务端加载？**
-- 支持 SSR，首屏直接渲染翻译后的内容
-- 避免客户端闪烁（先显示 key，再显示翻译）
-- 对 SEO 友好，搜索引擎能抓取到翻译后的内容
-
-### 2. 客户端使用翻译
-
-```typescript
-const { t } = useTranslation('common');
-
-// 基础用法
-<h1>{t('welcome')}</h1>
-
-// 变量插值
-<p>{t('welcome', { name: 'John' })}</p>
-
-// 嵌套翻译
-<p>{t('error_required', { field: t('username') })}</p>
-```
-
-### 3. 语言切换
-
-```typescript
-router.push(asPath, asPath, { locale: newLocale });
-```
-
-**参数说明**：
-- 第一个参数：目标路径
-- 第二个参数：浏览器显示的 URL
-- 第三个参数：选项对象，包含 `locale`
-
-### 4. 多语言内容管理策略
-
-**界面文案**：
-- 存储在 JSON 文件中
-- 按模块拆分（common、auth、product 等）
-- 版本控制，便于团队协作
-
-**业务内容**：
-- 存储在数据库中，使用多语言字段
-- 例如：`title_zh`、`title_en`、`title_fr`
-- 或使用 JSON 字段：`{ "zh": "标题", "en": "Title" }`
-
----
-
-## 📊 最佳实践
-
-### 1. 性能优化
-
-**按需加载翻译文件**：
-```typescript
-// 只加载需要的 namespace
-await serverSideTranslations(locale, ['common', 'auth'])
-```
-
-**分包策略**：
-- `common.json`：全局通用文案
-- `auth.json`：登录注册相关
-- `product.json`：商品相关
-- `checkout.json`：结账相关
-
-### 2. SEO 优化
-
-**添加 hreflang 标签**：
-```typescript
-import Head from 'next/head';
-import { useRouter } from 'next/router';
-
-export default function Page() {
-  const router = useRouter();
-  
-  return (
-    <>
-      <Head>
-        {router.locales?.map(locale => (
-          <link
-            key={locale}
-            rel="alternate"
-            hrefLang={locale}
-            href={`https://example.com/${locale}${router.asPath}`}
-          />
+      {/* 缩略图列表 */}
+      <div className="thumbnail-list">
+        {images.map((image, index) => (
+          <button
+            key={image.id}
+            className={index === selectedIndex ? 'active' : ''}
+            onClick={() => setSelectedIndex(index)}
+          >
+            <Image
+              src={image.src}
+              alt={image.alt}
+              width={100}
+              height={100}
+              quality={60}  // 缩略图降低质量
+              sizes="100px"
+            />
+          </button>
         ))}
-      </Head>
-      {/* 页面内容 */}
-    </>
+      </div>
+    </div>
   );
 }
 ```
 
-### 3. 团队协作
+#### 4.2 优化技巧
 
-**翻译流程**：
-1. 开发人员在代码中添加 key
-2. 导出所有 key 到翻译平台（如 Crowdin、Lokalise）
-3. 翻译人员在线翻译
-4. 自动同步回代码仓库
+**1. 主图与缩略图的差异**
+- **主图**：`quality={90}`，`priority={true}`，高质量优先加载
+- **缩略图**：`quality={60}`，懒加载，降低质量减小文件
 
-**推荐工具**：
-- Crowdin：支持自动化工作流
-- Lokalise：强大的团队协作功能
-- Transifex：适合开源项目
-
-### 4. 测试策略
-
-**单元测试**：
-```typescript
-import { renderHook } from '@testing-library/react';
-import { useTranslation } from 'next-i18next';
-
-test('translation works', () => {
-  const { result } = renderHook(() => useTranslation('common'));
-  expect(result.current.t('welcome', { name: 'Test' })).toBe('欢迎，Test！');
-});
+**2. 预加载相邻图片**
+```tsx
+useEffect(() => {
+  // 预加载前后相邻图片
+  const preloadImages = [
+    images[selectedIndex - 1],
+    images[selectedIndex + 1],
+  ].filter(Boolean);
+  
+  preloadImages.forEach(img => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = img.src;
+    document.head.appendChild(link);
+  });
+}, [selectedIndex]);
 ```
+
+**3. 虚拟滚动（大量图片）**
+- 画廊图片超过 100 张时，使用虚拟滚动
+- 只渲染可见区域的缩略图
+- 推荐库：`react-window`、`react-virtualized`
 
 ---
 
-## ⚠️ 常见问题
+### 5. 自定义加载器
 
-### Q1: 翻译不生效？
+#### 5.1 为什么需要自定义 Loader？
 
-**检查清单**：
-1. 是否在 `_app.tsx` 中使用了 `appWithTranslation`？
-2. 是否在 `getServerSideProps` 中加载了翻译？
-3. JSON 文件路径是否正确？
-4. namespace 是否匹配？
+**企业级场景：**
+- 已有阿里云 OSS、七牛云、腾讯云 COS 等图片服务
+- 需要使用云服务商的图片处理功能（缩放、水印、格式转换）
+- 降低成本，利用现有 CDN 资源
 
-### Q2: 语言切换后页面没有刷新？
+#### 5.2 阿里云 OSS Loader
 
-**解决方案**：
-```typescript
-router.push(asPath, asPath, { locale: newLocale });
-```
-确保使用 `router.push` 的第三个参数。
+```ts
+// utils/image/imageLoader.ts
+export interface ImageLoaderParams {
+  src: string;
+  width: number;
+  quality?: number;
+}
 
-### Q3: 如何处理复数形式？
-
-**使用 i18next 的复数规则**：
-```json
-{
-  "item_one": "{{count}} 个商品",
-  "item_other": "{{count}} 个商品"
+export function aliOssLoader({ src, width, quality = 80 }: ImageLoaderParams): string {
+  const base = 'https://img.alicdn.com';
+  // 阿里云 OSS 图片处理参数
+  return `${base}/${src}?x-oss-process=image/resize,w_${width}/quality,q_${quality}`;
 }
 ```
 
-```typescript
-t('item', { count: 1 })  // "1 个商品"
-t('item', { count: 5 })  // "5 个商品"
+**使用：**
+```tsx
+<Image
+  loader={aliOssLoader}
+  src="products/demo-product.jpg"
+  alt="商品图片"
+  width={600}
+  height={400}
+  quality={80}
+/>
 ```
 
-### Q4: 如何处理日期和货币？
+**阿里云 OSS 常用参数：**
+- `resize,w_宽度`：按宽度缩放
+- `quality,q_质量`：调整质量（1-100）
+- `format,webp`：转换为 WebP 格式
+- `watermark`：添加水印
 
-**使用 Intl API**：
-```typescript
-// 日期格式化
-new Intl.DateTimeFormat(locale).format(new Date())
+#### 5.3 七牛云 Loader
 
-// 货币格式化
-new Intl.NumberFormat(locale, { 
-  style: 'currency', 
-  currency: 'USD' 
-}).format(100)
+```ts
+export function qiniuLoader({ src, width, quality = 80 }: ImageLoaderParams): string {
+  const base = 'https://cdn.qiniu.com';
+  return `${base}/${src}?imageView2/2/w/${width}/q/${quality}`;
+}
+```
+
+**七牛云参数：**
+- `imageView2/2/w/宽度`：限定宽度，高度自适应
+- `q/质量`：图片质量
+- `format/webp`：输出格式
+
+#### 5.4 腾讯云 COS Loader
+
+```ts
+export function tencentCosLoader({ src, width, quality = 80 }: ImageLoaderParams): string {
+  const base = 'https://example.cos.ap-guangzhou.myqcloud.com';
+  return `${base}/${src}?imageMogr2/thumbnail/${width}x/quality/${quality}`;
+}
+```
+
+**腾讯云参数：**
+- `imageMogr2/thumbnail/宽度x`：缩略图
+- `quality/质量`：图片质量
+- `format/webp`：格式转换
+
+#### 5.5 全局配置 Loader
+
+```ts
+// next.config.ts
+const nextConfig = {
+  images: {
+    loader: 'custom',
+    loaderFile: './utils/image/imageLoader.ts',
+  },
+};
+
+// utils/image/imageLoader.ts
+export default function customLoader({ src, width, quality }: ImageLoaderParams) {
+  // 默认使用阿里云 OSS
+  return aliOssLoader({ src, width, quality });
+}
+```
+
+**使用：**
+```tsx
+// 不需要指定 loader，自动使用全局配置
+<Image
+  src="products/demo-product.jpg"
+  alt="商品图片"
+  width={600}
+  height={400}
+/>
 ```
 
 ---
 
-## 🎓 实战练习
+### 6. 高级技巧
 
-1. **添加第四种语言**（如日语 `ja`）
-   - 修改 `next.config.ts`
-   - 创建 `public/locales/ja/common.json`
-   - 测试语言切换
+#### 6.1 关键性能指标
 
-2. **实现多语言表单验证**
-   - 使用 `zod` 或 `yup` 配合 i18next
-   - 错误消息国际化
+**LCP (Largest Contentful Paint)**
+- **定义**：最大内容绘制时间
+- **目标**：< 2.5 秒
+- **优化**：首屏大图设置 `priority={true}`，使用 CDN
 
-3. **实现多语言 SEO**
-   - 添加 `hreflang` 标签
-   - 生成多语言 sitemap
+**CLS (Cumulative Layout Shift)**
+- **定义**：累积布局偏移
+- **目标**：< 0.1
+- **优化**：始终指定 `width` 和 `height`，使用 `placeholder`
 
-4. **集成翻译平台**
-   - 注册 Crowdin 账号
-   - 配置 GitHub 集成
-   - 实现自动同步
+**FID (First Input Delay)**
+- **定义**：首次输入延迟
+- **目标**：< 100 毫秒
+- **优化**：使用懒加载，避免大量图片同时加载
+
+#### 6.2 性能监控工具
+
+**1. Chrome DevTools**
+```bash
+1. 打开开发者工具（F12）
+2. Network 面板 → 过滤 Img 类型
+3. 查看：
+   - 图片实际加载尺寸
+   - 文件大小和加载时间
+   - 格式（WebP/AVIF/JPEG）
+   - 是否命中缓存
+```
+
+**2. Lighthouse**
+```bash
+1. Chrome DevTools → Lighthouse 面板
+2. 选择 Performance 模式
+3. 生成报告，查看：
+   - Properly size images（图片尺寸是否合适）
+   - Serve images in next-gen formats（是否使用现代格式）
+   - Defer offscreen images（是否懒加载）
+```
+
+**3. WebPageTest**
+- 访问：https://www.webpagetest.org/
+- 输入 URL，选择测试地点和设备
+- 分析 Waterfall 图和图片优化建议
+
+#### 6.3 高级优化技巧
+
+**1. 渐进式 JPEG**
+```bash
+# 使用 Sharp 库生成渐进式 JPEG
+import sharp from 'sharp';
+
+await sharp(input)
+  .jpeg({ progressive: true, quality: 85 })
+  .toFile(output);
+```
+
+**2. 图片预加载**
+```tsx
+// 在 <head> 中预加载
+<link
+  rel="preload"
+  as="image"
+  href="/hero-banner.jpg"
+  imagesrcset="/hero-640.jpg 640w, /hero-1280.jpg 1280w"
+  imagesizes="100vw"
+/>
+```
+
+**3. 响应式图片艺术指导**
+```tsx
+// 移动端用竖图，桌面端用横图
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+
+function ResponsiveImage() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  return (
+    <Image
+      src={isMobile ? '/portrait.jpg' : '/landscape.jpg'}
+      alt="响应式图片"
+      width={isMobile ? 400 : 1200}
+      height={isMobile ? 600 : 400}
+    />
+  );
+}
+```
+
+**4. 调整懒加载阈值**
+```ts
+// next.config.ts
+module.exports = {
+  images: {
+    // 图片进入视口前 500px 就开始加载
+    lazyBoundary: '500px',
+  },
+};
+```
 
 ---
 
-## 📚 参考资源
+## 最佳实践
 
-- [Next.js i18n 官方文档](https://nextjs.org/docs/advanced-features/i18n-routing)
-- [next-i18next 文档](https://github.com/i18next/next-i18next)
-- [i18next 文档](https://www.i18next.com/)
-- [Crowdin 文档](https://support.crowdin.com/)
+### ✅ 基础配置
+
+- [ ] 所有图片使用 `next/image`，禁用 `<img>` 标签
+- [ ] 配置 `remotePatterns` 白名单
+- [ ] 配置 `deviceSizes` 和 `imageSizes`
+- [ ] 启用 WebP 和 AVIF 格式
+
+### ✅ 图片属性
+
+- [ ] 始终提供有意义的 `alt` 属性
+- [ ] 指定 `width` 和 `height`，防止布局跳动
+- [ ] 首屏图片设置 `priority={true}`
+- [ ] 合理配置 `quality`（75-85）
+- [ ] 精确配置 `sizes` 属性
+
+### ✅ 加载优化
+
+- [ ] 非首屏图片使用懒加载
+- [ ] 使用 `placeholder` 占位符
+- [ ] 长列表使用虚拟滚动
+- [ ] 关键图片预加载
+
+### ✅ 性能监控
+
+- [ ] 定期运行 Lighthouse 检查
+- [ ] 监控 LCP、CLS 指标
+- [ ] 检查图片加载时间和大小
+- [ ] 使用真实设备测试
+
+### ✅ 电商场景
+
+- [ ] 商品主图统一规格（正方形 800×800）
+- [ ] 缩略图降低质量（quality=60-70）
+- [ ] 详情页支持大图预览（1500×1500）
+- [ ] CDN 加速，配置缓存策略
 
 ---
 
-## 🎉 总结
+## 常见问题
 
-本章完整实现了企业级国际化方案，涵盖：
+### Q1: 图片加载很慢？
 
-✅ **配置**：Next.js + next-i18next 完整配置  
-✅ **组件**：语言切换器、国际化图片  
-✅ **页面**：SSR 页面、动态路由、API 国际化  
-✅ **实践**：性能优化、SEO、团队协作  
-✅ **规范**：无 any 类型、无 as 断言、使用 Spacing 组件
+**排查步骤：**
+1. ✅ 检查图片文件大小，是否超过 200KB
+2. ✅ 检查 `quality` 设置，是否过高（建议 75-85）
+3. ✅ 检查是否使用 CDN
+4. ✅ 检查网络请求，是否被阻塞
+5. ✅ 确认使用了 WebP/AVIF 格式
 
-通过本章学习，你已经掌握了在 Next.js 中实现完整国际化功能的能力！
+### Q2: 移动端图片模糊？
+
+**原因：**
+- 高分屏设备（DPR 2-3）需要 2-3 倍尺寸的图片
+- `sizes` 配置不合理，加载了过小的图片
+
+**解决：**
+1. 检查 `sizes` 配置是否合理
+2. 提高 `quality` 设置（85-90）
+3. 检查 `deviceSizes` 配置
+4. 使用 Chrome DevTools 检查实际加载的图片尺寸
+
+### Q3: 页面布局跳动（CLS 高）？
+
+**原因：**
+- 图片加载时未指定尺寸，导致布局重排
+
+**解决：**
+1. 必须指定 `width` 和 `height`
+2. 使用 `placeholder="blur"` 占位符
+3. CSS 设置 `aspect-ratio` 保持宽高比
+4. 避免动态改变图片尺寸
+
+### Q4: 外部图片无法显示？
+
+**原因：**
+- 未配置 `remotePatterns` 白名单
+- 图片 URL 错误或服务器不可用
+- CORS 跨域问题
+
+**解决：**
+1. 检查 `next.config.ts` 的 `remotePatterns` 配置
+2. 检查图片 URL 是否正确
+3. 检查图片服务器 CORS 设置
+4. 使用浏览器开发者工具查看错误信息
+
+### Q5: 如何批量优化历史图片？
+
+**方案：**
+
+使用 Node.js 脚本 + Sharp 库批量处理：
+
+```js
+// scripts/optimize-images.js
+const sharp = require('sharp');
+const fs = require('fs');
+const path = require('path');
+
+const inputDir = './public/images';
+const outputDir = './public/images-optimized';
+
+async function optimizeImage(filePath) {
+  const filename = path.basename(filePath);
+  const outputPath = path.join(outputDir, filename);
+  
+  await sharp(filePath)
+    .resize(1920, null, { withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toFile(outputPath.replace(/\.\w+$/, '.webp'));
+    
+  console.log(`Optimized: ${filename}`);
+}
+
+// 递归处理所有图片
+async function processDirectory(dir) {
+  const files = fs.readdirSync(dir);
+  
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    
+    if (stat.isDirectory()) {
+      await processDirectory(filePath);
+    } else if (/\.(jpg|jpeg|png)$/i.test(file)) {
+      await optimizeImage(filePath);
+    }
+  }
+}
+
+processDirectory(inputDir);
+```
+
+运行：
+```bash
+node scripts/optimize-images.js
+```
+
+### Q6: 如何防止图片盗链？
+
+**方案1：Referer 白名单（云服务商设置）**
+- 阿里云 OSS/七牛云/腾讯云 COS 都支持
+- 只允许指定域名访问图片
+
+**方案2：签名 URL**
+```ts
+// 生成带签名的临时 URL
+import crypto from 'crypto';
+
+function generateSignedUrl(imagePath: string, expiresIn: number = 3600) {
+  const secret = process.env.IMAGE_SECRET;
+  const expires = Date.now() + expiresIn * 1000;
+  const sign = crypto
+    .createHmac('sha256', secret)
+    .update(`${imagePath}${expires}`)
+    .digest('hex');
+    
+  return `${imagePath}?expires=${expires}&sign=${sign}`;
+}
+```
+
+**方案3：Next.js Middleware**
+```ts
+// middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const referer = request.headers.get('referer');
+  const allowedDomains = ['yoursite.com'];
+  
+  if (!referer || !allowedDomains.some(domain => referer.includes(domain))) {
+    return new NextResponse('Forbidden', { status: 403 });
+  }
+  
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: '/images/:path*',
+};
+```
+
+---
+
+## 📚 学习资源
+
+### 官方文档
+
+- [Next.js Image 组件文档](https://nextjs.org/docs/app/api-reference/components/image)
+- [Next.js Image 配置](https://nextjs.org/docs/app/api-reference/config/next-config-js/images)
+- [Web.dev - 图片优化指南](https://web.dev/fast/#optimize-your-images)
+
+### 工具与库
+
+- [Sharp](https://sharp.pixelplumbing.com/) - 高性能图片处理库
+- [ImageOptim](https://imageoptim.com/) - Mac 图片压缩工具
+- [Squoosh](https://squoosh.app/) - 在线图片优化工具
+
+### 云服务商文档
+
+- [阿里云 OSS 图片处理](https://help.aliyun.com/document_detail/44688.html)
+- [七牛云图片处理](https://developer.qiniu.com/dora/1279/basic-processing-images-imageview2)
+- [腾讯云数据万象](https://cloud.tencent.com/document/product/460/6924)
+
+---
+
+## 🚀 总结
+
+### 核心要点
+
+1. **优先使用 next/image**：自动优化、懒加载、响应式
+2. **精确配置 sizes**：根据布局设计，节省流量
+3. **首屏图片优先加载**：设置 `priority={true}`
+4. **使用占位符**：消除布局跳动，提升体验
+5. **对接企业图片服务**：阿里云/七牛云/腾讯云，降低成本
+6. **性能监控**：定期检查 LCP、CLS 指标
+
+### 性能收益
+
+通过本章学习的图像优化技术，你可以实现：
+
+- 📉 图片体积减小 **60-80%**
+- ⚡ 首屏加载速度提升 **50-70%**
+- 📱 移动端流量节省 **60-80%**
+- 🎯 LCP 指标优化到 **< 2.5 秒**
+- 🔍 SEO 排名提升 **10-20%**
+
+### 下一步
+
+- 实践电商项目图片优化
+- 集成云服务商图片处理
+- 搭建图片 CDN 分发系统
+- 实现自动化图片优化流程
+
+---
+
+## 📞 反馈与支持
+
+如有问题或建议，欢迎提交 Issue 或 Pull Request！
+
+**Happy Coding! 🎉**

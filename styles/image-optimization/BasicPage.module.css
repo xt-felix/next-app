@@ -1,0 +1,205 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.backLink {
+  display: inline-block;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  margin-bottom: 24px;
+  transition: color 0.2s;
+}
+
+.backLink:hover {
+  color: #764ba2;
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 12px 0;
+  color: #111;
+}
+
+.description {
+  font-size: 18px;
+  color: #666;
+  margin: 0;
+}
+
+.section {
+  margin-bottom: 48px;
+}
+
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  color: #222;
+}
+
+.demoCard {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+.imageBox {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.imageBox img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fillContainer {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.codeBox {
+  background: #282c34;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.code {
+  color: #abb2bf;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 16px;
+  margin: 0;
+  overflow-x: auto;
+}
+
+.explanation {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.explanationTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #333;
+}
+
+.explanationList {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+  line-height: 1.8;
+}
+
+.explanationList li {
+  margin-bottom: 8px;
+}
+
+.explanationList strong {
+  color: #667eea;
+}
+
+.explanationText {
+  margin: 0 0 16px 0;
+  color: #555;
+  line-height: 1.6;
+}
+
+.comparisonCard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.comparisonColumn {
+}
+
+.comparisonTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #333;
+}
+
+.comparisonList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.comparisonList li {
+  padding: 8px 0;
+  color: #555;
+  line-height: 1.6;
+}
+
+.tipsCard {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tip {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tip:last-child {
+  border-bottom: none;
+}
+
+.tipIcon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.tipTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.tipText {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .comparisonCard {
+    grid-template-columns: 1fr;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .fillContainer {
+    height: 250px;
+  }
+}
+
