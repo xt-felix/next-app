@@ -226,3 +226,163 @@ export default async function SearchPage({ params, searchParams }: Props) {
   );
 }
 ```
+
+## 实战：列表详情页
+
+一个常见的场景是实现列表页和详情页的联动。
+
+### 数据准备
+
+```tsx
+// src/data/posts.ts
+export const data = [
+  {
+    userId: 1,
+    id: 1,
+    title:
+      "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+    body: "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
+  },
+  {
+    userId: 1,
+    id: 2,
+    title: "qui est esse",
+    body: "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla",
+  },
+  {
+    userId: 1,
+    id: 3,
+    title: "ea molestias quasi exercitationem repellat qui ipsa sit aut",
+    body: "et iusto sed quo iure\nvoluptatem occaecati omnis eligendi aut ad\nvoluptatem doloribus vel accusantium quis pariatur\nmolestiae porro eius odio et labore et velit aut",
+  },
+];
+```
+
+### 列表页
+
+```tsx
+// app/posts/page.tsx
+import Link from "next/link";
+import { data } from "@/data/posts";
+
+export default function PostsPage() {
+  return (
+    <div>
+      <h1>文章列表</h1>
+      <ul>
+        {data.map((post) => (
+          <li key={post.id}>
+            <Link href={`/posts/${post.id}`}>{post.title}</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### 详情页
+
+```tsx
+// app/posts/[id]/page.tsx
+import { notFound } from "next/navigation";
+import { data } from "@/data/posts";
+
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function PostPage({ params }: Props) {
+  const { id } = await params;
+  const post = data.find((p) => p.id === Number(id));
+
+  if (!post) {
+    notFound();
+  }
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </article>
+  );
+}
+```
+
+### 目录结构
+
+```
+app/
+└── posts/
+    ├── page.tsx           # 列表页 → /posts
+    └── [id]/
+        └── page.tsx       # 详情页 → /posts/1, /posts/2, ...
+```
+
+### 运行效果
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  /posts (列表页)                                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  文章列表                                                │
+│                                                         │
+│  • sunt aut facere repellat...  ← 点击跳转到 /posts/1   │
+│  • qui est esse                 ← 点击跳转到 /posts/2   │
+│  • ea molestias quasi...        ← 点击跳转到 /posts/3   │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│  /posts/1 (详情页)                                       │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  sunt aut facere repellat provident...                  │
+│                                                         │
+│  quia et suscipit suscipit recusandae                   │
+│  consequuntur expedita et cum...                        │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 配合 generateStaticParams
+
+如果想在构建时预生成所有详情页：
+
+```tsx
+// app/posts/[id]/page.tsx
+import { notFound } from "next/navigation";
+import { data } from "@/data/posts";
+
+// 构建时生成所有文章页面
+export async function generateStaticParams() {
+  return data.map((post) => ({
+    id: String(post.id),
+  }));
+}
+
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function PostPage({ params }: Props) {
+  const { id } = await params;
+  const post = data.find((p) => p.id === Number(id));
+
+  if (!post) {
+    notFound();
+  }
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </article>
+  );
+}
+```
+
+:::tip[提示]
+`generateStaticParams` 返回的 `id` 必须是字符串类型，因为 URL 参数都是字符串。在页面组件中使用时需要转换为数字进行比较。
+:::

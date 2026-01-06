@@ -31,6 +31,7 @@ export default defineConfig({
 								{ label: '页面元数据', slug: 'basics/metadata' },
 								{ label: 'Favicon 配置', slug: 'basics/favicon' },
 								{ label: '字体配置', slug: 'basics/fonts' },
+								{ label: '集成 Ant Design', slug: 'basics/antd' },
 							],
 						},
 						{
@@ -39,6 +40,8 @@ export default defineConfig({
 								{ label: 'App Router', slug: 'routes/app-router' },
 								{ label: '路由导航', slug: 'routes/navigation' },
 								{ label: '动态路由', slug: 'routes/dynamic-routes' },
+								{ label: '平行路由', slug: 'routes/parallel-routes' },
+								{ label: '拦截路由', slug: 'routes/intercepting-routes' },
 								{ label: 'NotFound 页面', slug: 'routes/not-found' },
 							],
 						},
