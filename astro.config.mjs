@@ -53,6 +53,12 @@ export default defineConfig({
 							],
 						},
 						{
+							label: 'API',
+							items: [
+								{ label: 'Route Handler', slug: 'api/route-handler' },
+							],
+						},
+						{
 							label: '部署',
 							items: [
 								{ label: 'Vercel 自动部署', slug: 'deploy/vercel' },
