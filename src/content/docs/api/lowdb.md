@@ -120,46 +120,132 @@ db.data.posts.splice(
 await db.write();
 ```
 
-## 查询数据
+## 修改数据
+
+```ts
+// src/app/api/posts/[id]/route.ts
+export const PATCH = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  const { title, content } = await request.json();
+
+  let idx = 0;
+  await db.update(({ posts }) => {
+    idx = posts.findIndex((item) => item.id === params.id);
+    posts[idx].title = title;
+    posts[idx].content = content;
+  });
+
+  return NextResponse.json({
+    code: 0,
+    message: "编辑成功",
+    data: db.data.posts[idx],
+  });
+};
+```
+
+### 另一种写法
+
+```ts
+// 使用 db.data 直接操作
+const data = db.data.posts;
+const idx = data.findIndex((item) => item.id === params.id);
+data[idx] = {
+  ...data[idx],
+  title,
+  content,
+};
+await db.write();
+```
+
+## 查询单条数据
+
+```ts
+// src/app/api/posts/[id]/route.ts
+export const GET = async (
+  _: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  const post = db.data.posts.find((item) => item.id === params.id);
+  return NextResponse.json({
+    code: 0,
+    message: "获取成功",
+    data: post,
+  });
+};
+```
+
+## 分页查询
 
 ```ts
 // src/app/api/posts/route.ts
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import db from "@/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const pagenum = Number(searchParams.get("pagenum")) || 1;
+  const pagesize = Number(searchParams.get("pagesize")) || 2;
+  const query = searchParams.get("query") || "";
+  const { posts: data } = db.data;
+
+  let filteredData = query
+    ? data.filter((item) => {
+        const { id, ...rest } = item;
+        return Object.values(rest).some((value) =>
+          String(value).toLowerCase().includes(query.toLowerCase())
+        );
+      })
+    : data;
+
+  const total = filteredData.length;
+
+  // 计算开始和结束索引
+  const startIndex = (pagenum - 1) * pagesize;
+  // 有可能最后一页不满 pagesize 的情况
+  const endIndex = Math.min(startIndex + pagesize, total);
+
+  // 检查开始索引是否超出数组范围
+  filteredData =
+    startIndex >= total ? [] : filteredData.slice(startIndex, endIndex);
+
   return NextResponse.json({
     code: 0,
-    data: db.data.posts,
+    message: "获取成功",
+    data: {
+      total,
+      list: filteredData,
+    },
   });
 }
 ```
 
-## 更新数据
+:::tip[提示]
+上面这种方式写接口，能隐藏 Authorization 等认证信息。
+:::
+
+## 参数获取
+
+### 请求参数
 
 ```ts
-// src/app/api/posts/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import db from "@/db";
+export async function GET(request, context) {
+  // 访问 /home, pathname 的值为 /home
+  const pathname = request.nextUrl.pathname;
+  // 访问 /home?name=lee, searchParams 的值为 { 'name': 'lee' }
+  const searchParams = request.nextUrl.searchParams;
+}
+```
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const id = params.id;
-  const body = await request.json();
+### 动态路由参数
 
-  await db.update(({ posts }) => {
-    const index = posts.findIndex((item) => item.id === id);
-    if (index !== -1) {
-      posts[index] = { ...posts[index], ...body };
-    }
-  });
-
-  return NextResponse.json({
-    code: 0,
-    message: "更新成功",
-  });
+```ts
+// app/dashboard/[team]/route.js
+// 目前 context 只有一个值就是 params，它是一个包含当前动态路由参数的对象
+export async function GET(request, { params }) {
+  const team = params.team;
 }
 ```
 
@@ -186,3 +272,13 @@ project/
 │                   └── route.ts       # PUT / DELETE
 └── db.json                            # 数据文件（自动生成）
 ```
+
+## 接口汇总
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/posts` | 分页查询列表 |
+| POST | `/api/posts` | 新增文章 |
+| GET | `/api/posts/[id]` | 查询单条 |
+| PATCH | `/api/posts/[id]` | 修改文章 |
+| DELETE | `/api/posts/[id]` | 删除文章 |
