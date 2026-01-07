@@ -57,6 +57,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Route Handler', slug: 'api/route-handler' },
 								{ label: '集成 lowdb', slug: 'api/lowdb' },
+								{ label: 'GET 缓存', slug: 'api/get-cache' },
 							],
 						},
 						{
