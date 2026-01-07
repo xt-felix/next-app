@@ -56,6 +56,7 @@ export default defineConfig({
 							label: 'API',
 							items: [
 								{ label: 'Route Handler', slug: 'api/route-handler' },
+								{ label: '集成 lowdb', slug: 'api/lowdb' },
 							],
 						},
 						{
