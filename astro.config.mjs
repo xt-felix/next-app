@@ -50,6 +50,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Header 组件', slug: 'components/header' },
 								{ label: 'Hero 组件', slug: 'components/hero' },
+								{ label: '服务端组件', slug: 'components/server-component' },
 							],
 						},
 						{
@@ -58,6 +59,9 @@ export default defineConfig({
 								{ label: 'Route Handler', slug: 'api/route-handler' },
 								{ label: '集成 lowdb', slug: 'api/lowdb' },
 								{ label: 'GET 缓存', slug: 'api/get-cache' },
+								{ label: '数据获取和缓存', slug: 'api/data-fetching' },
+								{ label: 'Next.js 中的缓存', slug: 'api/caching' },
+								{ label: 'Server Action', slug: 'api/server-action' },
 								{ label: '中间件', slug: 'api/middleware' },
 							],
 						},
@@ -65,6 +69,13 @@ export default defineConfig({
 							label: '部署',
 							items: [
 								{ label: 'Vercel 自动部署', slug: 'deploy/vercel' },
+							],
+						},
+						{ label: 'Snippets 项目', slug: 'guides/snippets-project' },
+						{
+							label: '实战项目',
+							items: [
+								{ label: '🦜 论坛项目', slug: 'guides/forum-project' },
 							],
 						},
 					],
